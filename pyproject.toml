@@ -41,6 +41,9 @@ asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "strict"
 env = ["TEST=true", "ENV=test"]
 
+[tool.poetry.build]
+script = "build.py"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

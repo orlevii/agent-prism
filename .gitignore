@@ -66,3 +66,5 @@ cover/
 _data/
 errors/
 /logs/
+
+src/agentbook/static/
