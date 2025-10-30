@@ -58,7 +58,6 @@ class _AgentLoader:
         modules: list[types.ModuleType] = []
         for module_info in pkgutil.walk_packages(pkg.__path__, prefix=f"{package}."):
             module_name = module_info.name
-            print("module_name:", module_name)
             # Only import modules with __prisim suffix
             if not module_name.endswith("__prisim"):
                 continue
