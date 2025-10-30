@@ -2,12 +2,9 @@ import { useState, useCallback } from 'react';
 import type { PlaygroundSettings } from '../types/playground';
 
 const DEFAULT_SETTINGS: PlaygroundSettings = {
-  baseUrl: 'http://localhost:11434',
-  model: '',
-  systemPrompt: '',
-  temperature: 0.7,
-  tools: '[]',
-  enableThinking: true,
+  baseUrl: window.location.origin,
+  agent: '',
+  dependencies: '{}',
 };
 
 export function useSettings() {

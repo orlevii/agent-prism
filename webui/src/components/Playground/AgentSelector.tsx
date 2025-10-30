@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { OllamaTagsResponse } from '../../types/playground';
+import type { AgentsResponse, Agent } from '../../types/agent';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,18 +14,18 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ModelSelectorProps {
+interface AgentSelectorProps {
   baseUrl: string;
-  selectedModel: string;
-  onModelChange: (model: string) => void;
+  selectedAgent: string;
+  onAgentChange: (agent: string) => void;
 }
 
-export default function ModelSelector({
+export default function AgentSelector({
   baseUrl,
-  selectedModel,
-  onModelChange,
-}: ModelSelectorProps) {
-  const [models, setModels] = useState<string[]>([]);
+  selectedAgent,
+  onAgentChange,
+}: AgentSelectorProps) {
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -33,84 +33,98 @@ export default function ModelSelector({
 
   useEffect(() => {
     if (!baseUrl) {
-      setModels([]);
+      setAgents([]);
       hasAutoSelectedRef.current = false;
       return;
     }
 
-    const fetchModels = async () => {
+    const fetchAgents = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(`${baseUrl}/api/tags`);
+        const response = await fetch(`${baseUrl}/api/agents`);
         if (!response.ok) {
-          throw new Error(`Failed to fetch models: ${response.statusText}`);
+          throw new Error(`Failed to fetch agents: ${response.statusText}`);
         }
 
-        const data: OllamaTagsResponse = await response.json();
-        const modelNames = data.models.map((model) => model.name).sort();
-        setModels(modelNames);
+        const data: AgentsResponse = await response.json();
+        // Convert string[] to Agent[] objects
+        const agentObjects: Agent[] = data.agents.map((agentName) => ({
+          id: agentName,
+          name: agentName,
+        }));
+        const sortedAgents = agentObjects.sort((a, b) => a.name.localeCompare(b.name));
+        setAgents(sortedAgents);
 
-        // Auto-select first model if none selected and haven't auto-selected yet
-        if (!selectedModel && modelNames.length > 0 && !hasAutoSelectedRef.current) {
-          onModelChange(modelNames[0]);
+        // Auto-select first agent if none selected and haven't auto-selected yet
+        if (!selectedAgent && sortedAgents.length > 0 && !hasAutoSelectedRef.current) {
+          onAgentChange(sortedAgents[0].id);
           hasAutoSelectedRef.current = true;
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load models';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load agents';
         setError(errorMessage);
-        setModels([]);
+        setAgents([]);
         hasAutoSelectedRef.current = false;
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchModels();
+    fetchAgents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseUrl]); // Only re-fetch when baseUrl changes
 
+  const selectedAgentData = agents.find((a) => a.id === selectedAgent);
+
   return (
     <div className="space-y-2">
-      <Label htmlFor="model-select">Model</Label>
+      <Label htmlFor="agent-select">Agent</Label>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            id="model-select"
+            id="agent-select"
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
-            disabled={isLoading || models.length === 0}
+            disabled={isLoading || agents.length === 0}
           >
-            {selectedModel || (isLoading ? 'Loading models...' : 'Select a model')}
+            {selectedAgentData?.name ||
+              selectedAgent ||
+              (isLoading ? 'Loading agents...' : 'Select an agent')}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
           <Command>
-            <CommandInput placeholder="Search models..." />
+            <CommandInput placeholder="Search agents..." />
             <CommandList>
-              <CommandEmpty>No models found.</CommandEmpty>
+              <CommandEmpty>No agents found.</CommandEmpty>
               <CommandGroup>
-                {models.map((model) => (
+                {agents.map((agent) => (
                   <CommandItem
-                    key={model}
-                    value={model}
-                    onSelect={(currentValue) => {
-                      onModelChange(currentValue === selectedModel ? '' : currentValue);
+                    key={agent.id}
+                    value={agent.name}
+                    onSelect={() => {
+                      onAgentChange(agent.id === selectedAgent ? '' : agent.id);
                       setOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         'mr-2 h-4 w-4',
-                        selectedModel === model ? 'opacity-100' : 'opacity-0'
+                        selectedAgent === agent.id ? 'opacity-100' : 'opacity-0'
                       )}
                     />
-                    {model}
+                    <div className="flex flex-col">
+                      <span>{agent.name}</span>
+                      {agent.description && (
+                        <span className="text-xs text-muted-foreground">{agent.description}</span>
+                      )}
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>

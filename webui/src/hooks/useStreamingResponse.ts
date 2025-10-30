@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { Message, ToolCall } from '../types/playground';
 
-interface OllamaStreamChunk {
+interface StreamChunk {
   message?: {
     content?: string;
     thinking?: string;
@@ -10,7 +10,7 @@ interface OllamaStreamChunk {
 }
 
 interface ProcessStreamOptions {
-  stream: AsyncIterable<OllamaStreamChunk>;
+  stream: AsyncIterable<StreamChunk>;
   initialMessageId: string;
   responseGroupId: string;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
@@ -22,12 +22,7 @@ interface ProcessStreamResult {
   assistantMessageIds: string[];
 }
 
-/**
- * Hook for processing Ollama streaming responses
- * Handles accumulation of content, thinking, and tool calls
- * Manages creation of new messages when tool calls change
- */
-export function useOllamaStream() {
+export function useStreamingResponse() {
   const processStream = useCallback(
     async ({
       stream,

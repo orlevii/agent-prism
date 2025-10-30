@@ -1,12 +1,7 @@
-import type { OllamaTool } from '../types/playground';
+import type { Tool } from '../types/playground';
 import { normalizeTools } from './tools';
 
-/**
- * Parses and normalizes tools from a JSON string
- * @param toolsString - JSON string containing tool definitions
- * @returns Normalized tools array or undefined if invalid/empty
- */
-export function parseTools(toolsString: string): OllamaTool[] | undefined {
+export function parseTools(toolsString: string): Tool[] | undefined {
   if (!toolsString.trim()) {
     return undefined;
   }

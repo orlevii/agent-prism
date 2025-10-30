@@ -41,7 +41,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-violet-500 bg-clip-text text-transparent">
               Open Playground
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Ollama LLM Playground</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Agent-based AI Playground</p>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />

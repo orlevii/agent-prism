@@ -5,11 +5,15 @@ description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
 packages = [{ include = "agentbook", from = "src" }]
 
+[tool.poetry.scripts]
+agentbook = "agentbook.cli:cli"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 swiftcli = "^0.1.0"
 pydantic-ai-slim = "^1.7.0"
 fastapi = "^0.120.1"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 ipdb = "^0.13.13"

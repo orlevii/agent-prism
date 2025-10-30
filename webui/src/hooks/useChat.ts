@@ -1,24 +1,22 @@
 import { useState, useCallback, useRef } from 'react';
-import { Ollama } from 'ollama/browser';
 import type { Message, PlaygroundSettings, ToolResponse, ToolCall } from '../types/playground';
-import { parseTools } from '../utils/toolParser';
 import { buildApiMessagesWithUserInput, buildApiMessages } from '../utils/messageBuilder';
-import { initializeOllamaClient, makeStreamingChatRequest } from '../utils/ollamaClient';
+import { initializeApiClient, makeStreamingChatRequest } from '../utils/apiClient';
 import { handleChatError, cleanup } from '../utils/chatErrorHandler';
-import { useOllamaStream } from './useOllamaStream';
+import { useStreamingResponse } from './useStreamingResponse';
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const ollamaClientRef = useRef<Ollama | null>(null);
-  const { processStream } = useOllamaStream();
+  const apiClientRef = useRef<ReturnType<typeof initializeApiClient> | null>(null);
+  const { processStream } = useStreamingResponse();
 
   const sendMessage = useCallback(
     async (content: string, settings: PlaygroundSettings) => {
-      if (!content.trim() || !settings.model) {
-        setError('Please enter a message and select a model');
+      if (!content.trim() || !settings.agent) {
+        setError('Please enter a message and select an agent');
         return;
       }
 
@@ -52,19 +50,22 @@ export function useChat() {
       let assistantMessageIds: string[] = [initialMessageId];
 
       try {
-        const tools = parseTools(settings.tools);
-        const apiMessages = buildApiMessagesWithUserInput(messages, content, settings.systemPrompt);
-        const ollama = initializeOllamaClient(
-          settings.baseUrl,
-          ollamaClientRef,
-          abortControllerRef
-        );
-        const response = await makeStreamingChatRequest(ollama, {
-          model: settings.model,
+        const apiMessages = buildApiMessagesWithUserInput(messages, content);
+        const apiClient = initializeApiClient(settings.baseUrl);
+        apiClientRef.current = apiClient;
+
+        let dependencies: Record<string, unknown> = {};
+        try {
+          dependencies = JSON.parse(settings.dependencies || '{}');
+        } catch {
+          // If dependencies are invalid JSON, use empty object
+        }
+
+        const response = makeStreamingChatRequest(apiClient, {
+          agent: settings.agent,
           messages: apiMessages,
-          temperature: settings.temperature,
-          enableThinking: settings.enableThinking,
-          tools,
+          dependencies,
+          stream: true,
         });
 
         const result = await processStream({
@@ -79,7 +80,7 @@ export function useChat() {
       } catch (err) {
         handleChatError(err, assistantMessageIds, setError, setMessages);
       } finally {
-        cleanup(setIsLoading, ollamaClientRef, abortControllerRef);
+        cleanup(setIsLoading, apiClientRef, abortControllerRef);
       }
     },
     [messages, processStream]
@@ -91,11 +92,11 @@ export function useChat() {
   }, []);
 
   const cancelRequest = useCallback(() => {
-    if (ollamaClientRef.current) {
-      ollamaClientRef.current.abort();
-    }
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+    }
+    if (apiClientRef.current) {
+      apiClientRef.current.abortController.abort();
     }
   }, []);
 
@@ -115,8 +116,8 @@ export function useChat() {
         return;
       }
 
-      if (!newContent.trim() || !settings.model) {
-        setError('Please enter a message and select a model');
+      if (!newContent.trim() || !settings.agent) {
+        setError('Please enter a message and select an agent');
         return;
       }
 
@@ -150,19 +151,22 @@ export function useChat() {
       let assistantMessageIds: string[] = [initialMessageId];
 
       try {
-        const tools = parseTools(settings.tools);
-        const apiMessages = buildApiMessages(updatedMessages, settings.systemPrompt);
-        const ollama = initializeOllamaClient(
-          settings.baseUrl,
-          ollamaClientRef,
-          abortControllerRef
-        );
-        const response = await makeStreamingChatRequest(ollama, {
-          model: settings.model,
+        const apiMessages = buildApiMessages(updatedMessages);
+        const apiClient = initializeApiClient(settings.baseUrl);
+        apiClientRef.current = apiClient;
+
+        let dependencies: Record<string, unknown> = {};
+        try {
+          dependencies = JSON.parse(settings.dependencies || '{}');
+        } catch {
+          // If dependencies are invalid JSON, use empty object
+        }
+
+        const response = makeStreamingChatRequest(apiClient, {
+          agent: settings.agent,
           messages: apiMessages,
-          temperature: settings.temperature,
-          enableThinking: settings.enableThinking,
-          tools,
+          dependencies,
+          stream: true,
         });
 
         const result = await processStream({
@@ -177,7 +181,7 @@ export function useChat() {
       } catch (err) {
         handleChatError(err, assistantMessageIds, setError, setMessages);
       } finally {
-        cleanup(setIsLoading, ollamaClientRef, abortControllerRef);
+        cleanup(setIsLoading, apiClientRef, abortControllerRef);
       }
     },
     [messages, processStream]
@@ -237,23 +241,22 @@ export function useChat() {
       let assistantMessageIds: string[] = [initialMessageId];
 
       try {
-        const tools = parseTools(settings.tools);
-        const apiMessages = buildApiMessages(
-          [...messages, ...toolResponseMessages],
-          settings.systemPrompt,
-          true // include tool data
-        );
-        const ollama = initializeOllamaClient(
-          settings.baseUrl,
-          ollamaClientRef,
-          abortControllerRef
-        );
-        const response = await makeStreamingChatRequest(ollama, {
-          model: settings.model,
+        const apiMessages = buildApiMessages([...messages, ...toolResponseMessages], true);
+        const apiClient = initializeApiClient(settings.baseUrl);
+        apiClientRef.current = apiClient;
+
+        let dependencies: Record<string, unknown> = {};
+        try {
+          dependencies = JSON.parse(settings.dependencies || '{}');
+        } catch {
+          // If dependencies are invalid JSON, use empty object
+        }
+
+        const response = makeStreamingChatRequest(apiClient, {
+          agent: settings.agent,
           messages: apiMessages,
-          temperature: settings.temperature,
-          enableThinking: settings.enableThinking,
-          tools,
+          dependencies,
+          stream: true,
         });
 
         const result = await processStream({
@@ -268,7 +271,7 @@ export function useChat() {
       } catch (err) {
         handleChatError(err, assistantMessageIds, setError, setMessages);
       } finally {
-        cleanup(setIsLoading, ollamaClientRef, abortControllerRef);
+        cleanup(setIsLoading, apiClientRef, abortControllerRef);
       }
     },
     [messages, processStream]

@@ -26,19 +26,11 @@ export interface Message {
 
 export interface PlaygroundSettings {
   baseUrl: string;
-  model: string;
-  systemPrompt: string;
-  temperature: number;
-  tools: string; // JSON string
-  enableThinking: boolean;
+  agent: string;
+  dependencies: string; // JSON string
 }
 
-export interface OllamaMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-export interface OllamaTool {
+export interface Tool {
   type: 'function';
   function: {
     name: string;
@@ -56,51 +48,4 @@ export interface GoogleAIStudioTool {
     required?: string[];
     propertyOrdering?: string[];
   };
-}
-
-export interface OllamaChatRequest {
-  model: string;
-  messages: OllamaMessage[];
-  stream?: boolean;
-  options?: {
-    temperature?: number;
-  };
-  tools?: OllamaTool[];
-}
-
-export interface OllamaModel {
-  name: string;
-  model: string;
-  size: number;
-  digest: string;
-  details: {
-    parent_model: string;
-    format: string;
-    family: string;
-    families: string[];
-    parameter_size: string;
-    quantization_level: string;
-  };
-}
-
-export interface OllamaTagsResponse {
-  models: OllamaModel[];
-}
-
-export interface OllamaStreamChunk {
-  model: string;
-  created_at: string;
-  message: {
-    role: string;
-    content: string;
-    thinking?: string;
-    tool_calls?: ToolCall[];
-  };
-  done: boolean;
-  total_duration?: number;
-  load_duration?: number;
-  prompt_eval_count?: number;
-  prompt_eval_duration?: number;
-  eval_count?: number;
-  eval_duration?: number;
 }
