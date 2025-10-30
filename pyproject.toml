@@ -1,12 +1,19 @@
 [tool.poetry]
-name = "agentbook"
+name = "agent-prism"
 version = "0.0.1"
 description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
-packages = [{ include = "agentbook", from = "src" }]
+packages = [{ include = "agent_prism", from = "src" }]
+
+[tool.poetry.scripts]
+agent-prism = "agent_prism.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+swiftcli = "^0.1.0"
+pydantic-ai-slim = "^1.7.0"
+fastapi = "^0.120.1"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 ipdb = "^0.13.13"
@@ -17,25 +24,29 @@ pytest-cov = "^7.0.0"
 pytest-env = "^1.2.0"
 pytest-mock = "^3.15.1"
 python-dotenv = "^1.2.1"
+pydantic-ai = "^1.7.0"
 
 [tool.poe.tasks]
-lint = "ruff check src tests"
+lint = "ruff check src tests examples"
 format = [
-    { cmd = "ruff format src tests" },
-    { cmd = "ruff check src tests --fix" },
+    { cmd = "ruff format src tests examples" },
+    { cmd = "ruff check src tests examples --fix" },
 ]
 "format:unsafe" = [
-    { cmd = "ruff format src tests" },
-    { cmd = "ruff check src tests --fix --unsafe-fixes" },
+    { cmd = "ruff format src tests examples" },
+    { cmd = "ruff check src tests examples --fix --unsafe-fixes" },
 ]
 test = "pytest"
-mypy = "mypy -p agentbook -p tests"
+mypy = "mypy -p agent_prism -p tests"
 
 [tool.pytest.ini_options]
-addopts = "--cov=agentbook --cov tests -v"
+addopts = "--cov=agent_prism --cov tests -v"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "strict"
 env = ["TEST=true", "ENV=test"]
+
+[tool.poetry.build]
+script = "build.py"
 
 [build-system]
 requires = ["poetry-core"]

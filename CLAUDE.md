@@ -1,48 +1,59 @@
-# Python Guidelines
+# Agent Prism - Repository Context
 
-This is a set of rules for AI assistants generating code for this project. Adherence to these guidelines is mandatory to ensure all contributions meet our standards for dependency management, code quality, and style.
+## Mission
 
-### Core Principles
-*   **Dependencies**: Handled exclusively by `poetry`.
-*   **Tasks**: Run exclusively with `poe`.
-*   **Typing**: All code must be fully and strictly type-hinted.
-*   **Never** suggest using `pip` or `venv` directly.
+Agent Prism is **"Storybook for AI Agents"** - an interactive development tool that provides an isolated testing environment for `pydantic-ai` agents. It enables rapid iteration, debugging, and showcasing of agents through a web playground with real-time visibility into agent thinking, tool executions, and streaming responses.
 
-### Dependency Management
+## Architecture Overview
 
-*   **To add a production dependency**, instruct the user to run:
-    ```bash
-    poetry add <package-name>
-    ```
-*   **To add a development dependency** (e.g., for testing), instruct the user to run:
-    ```bash
-    poetry add --group dev <package-name>
-    ```
+### Key Patterns
 
-### Code Generation (CRITICAL)
-*   **Mandatory Type Hints**: All Python code you generate **must** be fully type-hinted. This is a non-negotiable project rule.
-*   **Function Signatures**: All arguments and return values must have explicit type annotations.
-    *   **Correct**: `def get_user(user_id: int) -> User | None:`
-    *   **Incorrect**: `def get_user(user_id):`
-*   **Modern Types**: Prefer modern type hints like `list[str]` over `typing.List[str]`.
-*   **AVOID** using docstring when defining functions as it's against clean code principles.
+#### 1. Agent Discovery Convention
 
-### Task Execution & Quality Checks
+- Agents are auto-discovered using the `__prism` suffix pattern:
+- Files ending with `__prism.py` are automatically imported
+- `export_agent()` registers agents during module import
+- Multiple dependency configurations enable testing different scenarios
 
-All project tasks are run with `poe {task_name}`.
+#### 2. Streaming Event Architecture
 
-*   `poe test`: Runs the entire test suite.
-  * `poe test <file/module>`: you can run a file/test by passing an argument (it will be passed to the pytest command) 
-*   `poe mypy`: Performs strict static type checking.
-*   `poe lint`: Checks the code for style issues and errors.
-*   `poe format`: Automatically applies all required formatting fixes.
-*   `poe format:unsafe`: Automatically applies all **UNSAFE** formatting fixes.
+All agent interactions use Server-Sent Events (SSE) for streaming responses.
 
-### After Every Change
+**Event Types** (defined in `src/agent_prism/types.py`):
+- `TextDeltaEvent` - Streaming text content
+- `ThinkingDeltaEvent` - Agent reasoning/thought process
+- `ToolCallExecutingEvent` - Tool invocation with arguments
+- `ToolResultEvent` - Tool execution results
+- `ErrorEvent` - Error information
+- `DoneEvent` - Stream completion signal
 
-**This is the most important rule.** After you generate or modify any code, you **must** validate the changes immediately by running the full quality suite.
+**API Endpoint**: `POST /api/chat` accepts messages and streams events back as newline-delimited JSON.
 
-```bash
-poe format
-poe mypy
-```
+## Common Tasks Context
+
+### Modifying Streaming Events
+
+1. Update event types in `src/agent_prism/types.py`
+2. Update event emission in `src/agent_prism/api.py:chat_endpoint`
+3. Update TypeScript types in `webui/src/types/events.ts`
+4. Update event handling in `webui/src/hooks/useStreamingResponse.ts`
+
+### Frontend Component Changes
+
+- UI primitives: `webui/src/components/ui/` (ShadCN)
+- Feature components: `webui/src/components/Playground/`
+- Update imports if moving/renaming components
+- TailwindCSS v4 uses new `@theme` syntax in CSS
+
+### Backend API Changes
+
+- Add endpoints in `src/agent_prism/api.py`
+- Update TypeScript API client in `webui/src/utils/apiClient.ts`
+- Maintain type consistency between Python and TypeScript
+
+## Testing
+
+- Backend tests in `tests/` using pytest
+- Type checking with `poe mypy` (strict mode enforced)
+- Frontend component testing with React Testing Library (if added)
+- Integration testing via example agents in `examples/`
