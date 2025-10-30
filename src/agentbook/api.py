@@ -36,13 +36,31 @@ from .types import (
 api_router = APIRouter(prefix="/api")
 
 
+class DependencyInfo(BaseModel):
+    name: str
+    data: dict[str, Any]
+
+
+class AgentInfo(BaseModel):
+    name: str
+    dependencies: list[DependencyInfo]
+
+
 class GetAgentsResponse(BaseModel):
-    agents: list[str]
+    agents: list[AgentInfo]
 
 
 @api_router.get("/agents")
 async def get_agents() -> GetAgentsResponse:
-    return GetAgentsResponse(agents=list(agent_loader._agents.keys()))
+    agents = []
+    for agent_name in agent_loader._agents:
+        dependency_data = agent_loader.get_agent_dependency_data(agent_name)
+        dependencies = [
+            DependencyInfo(name=dep_name, data=dep_data)
+            for dep_name, dep_data in dependency_data.items()
+        ]
+        agents.append(AgentInfo(name=agent_name, dependencies=dependencies))
+    return GetAgentsResponse(agents=agents)
 
 
 class ChatRequest(BaseModel):

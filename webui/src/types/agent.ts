@@ -1,11 +1,20 @@
+export interface DependencyInfo {
+  name: string;
+  data: Record<string, unknown>;
+}
+
 export interface Agent {
   id: string;
   name: string;
   description?: string;
+  dependencies: DependencyInfo[];
 }
 
 export interface AgentsResponse {
-  agents: string[];
+  agents: Array<{
+    name: string;
+    dependencies: DependencyInfo[];
+  }>;
 }
 
 export interface ApiMessage {

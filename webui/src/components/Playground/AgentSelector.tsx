@@ -18,12 +18,14 @@ interface AgentSelectorProps {
   baseUrl: string;
   selectedAgent: string;
   onAgentChange: (agent: string) => void;
+  onAgentDataChange?: (agent: Agent | null) => void;
 }
 
 export default function AgentSelector({
   baseUrl,
   selectedAgent,
   onAgentChange,
+  onAgentDataChange,
 }: AgentSelectorProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,10 +51,11 @@ export default function AgentSelector({
         }
 
         const data: AgentsResponse = await response.json();
-        // Convert string[] to Agent[] objects
-        const agentObjects: Agent[] = data.agents.map((agentName) => ({
-          id: agentName,
-          name: agentName,
+        // Convert API response to Agent[] objects
+        const agentObjects: Agent[] = data.agents.map((agent) => ({
+          id: agent.name,
+          name: agent.name,
+          dependencies: agent.dependencies,
         }));
         const sortedAgents = agentObjects.sort((a, b) => a.name.localeCompare(b.name));
         setAgents(sortedAgents);
@@ -77,6 +80,13 @@ export default function AgentSelector({
   }, [baseUrl]); // Only re-fetch when baseUrl changes
 
   const selectedAgentData = agents.find((a) => a.id === selectedAgent);
+
+  // Notify parent of agent data changes
+  useEffect(() => {
+    if (onAgentDataChange) {
+      onAgentDataChange(selectedAgentData || null);
+    }
+  }, [selectedAgentData, onAgentDataChange]);
 
   return (
     <div className="space-y-2">

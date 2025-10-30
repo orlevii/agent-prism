@@ -1,4 +1,4 @@
-from typing import Generic, TypedDict, TypeVar
+from typing import Any, Generic, TypedDict, TypeVar
 
 from pydantic_ai import Agent
 
@@ -15,8 +15,19 @@ class DependenciesDict(TypedDict, Generic[TDeps]):
 
 def export_agent(
     agent: Agent[TDeps, TResp],
-    dependenies: list[DependenciesDict[TDeps]],
+    dependencies: list[DependenciesDict[TDeps]],
     agent_name: str | None = None,
 ) -> None:
-    name = agent_name or agent.name or "unkown_agent"
-    agent_loader.register_agent(agent_name=name, agent=agent, module_name="")
+    name = agent_name or agent.name or "unknown_agent"
+
+    dependency_data: dict[str, dict[str, Any]] = {}
+    for dep in dependencies:
+        dep_obj = dep["dependency"]
+        if hasattr(dep_obj, "model_dump"):
+            dependency_data[dep["name"]] = dep_obj.model_dump()
+        else:
+            dependency_data[dep["name"]] = {}
+
+    agent_loader.register_agent(
+        agent_name=name, agent=agent, module_name="", dependency_data=dependency_data
+    )

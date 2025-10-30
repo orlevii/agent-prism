@@ -25,6 +25,8 @@ def _temp_sys_path_addition(path: str) -> Iterator[None]:
 class _AgentLoader:
     def __init__(self) -> None:
         self._agents: dict[str, Agent[Any, Any]] = {}
+        self._dependencies: dict[str, list[str]] = {}
+        self._dependency_data: dict[str, dict[str, dict[str, Any]]] = {}
 
     def _import_package_with_fallback(self, package: str) -> types.ModuleType:
         try:
@@ -68,7 +70,12 @@ class _AgentLoader:
         return modules
 
     def register_agent(
-        self, agent_name: str, agent: Agent[Any, Any], module_name: str
+        self,
+        agent_name: str,
+        agent: Agent[Any, Any],
+        module_name: str,
+        dependencies: list[str] | None = None,
+        dependency_data: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         if agent_name in self._agents:
             logger.warning(
@@ -76,6 +83,14 @@ class _AgentLoader:
                 f"Overwriting previous agent."
             )
         self._agents[agent_name] = agent
+
+        if dependency_data:
+            self._dependency_data[agent_name] = dependency_data
+            self._dependencies[agent_name] = list(dependency_data.keys())
+        else:
+            self._dependencies[agent_name] = dependencies or []
+            self._dependency_data[agent_name] = {}
+
         logger.info(f"Loaded agent '{agent_name}' from {module_name}")
 
     def load(self, package: str) -> None:
@@ -89,6 +104,12 @@ class _AgentLoader:
 
     def get_agent_by_name(self, agent_name: str) -> Agent[Any, Any]:
         return self._agents[agent_name]
+
+    def get_agent_dependencies(self, agent_name: str) -> list[str]:
+        return self._dependencies.get(agent_name, [])
+
+    def get_agent_dependency_data(self, agent_name: str) -> dict[str, dict[str, Any]]:
+        return self._dependency_data.get(agent_name, {})
 
 
 agent_loader = _AgentLoader()
