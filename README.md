@@ -24,8 +24,6 @@ When developing UI components, tools like Storybook revolutionized the workflow 
 
 Agent Prism automatically discovers your `pydantic-ai` agents, loads them into an interactive web playground, and lets you test, debug, and showcase them in real-time with full visibility into their thinking process and tool executions.
 
----
-
 ## ✨ Key Features
 
 - 🔍 **Auto-Discovery** - Automatically finds and loads agents from your codebase
@@ -35,8 +33,6 @@ Agent Prism automatically discovers your `pydantic-ai` agents, loads them into a
 - 🛠️ **Tool Visualization** - See exactly what tools agents call with arguments and results
 - 🎭 **Multi-Agent Support** - Test multiple agents in the same environment
 - 📦 **Type-Safe** - Full TypeScript and Python type hints throughout
-
----
 
 ## 🚀 Quick Start
 
@@ -90,15 +86,13 @@ export_agent(
 Start the server and open `http://localhost:8765`:
 
 ```bash
-agent-prism myapp.agents
+agent-prism myapp.agents --reload
 ```
-
----
 
 ## 🛠️ CLI Reference
 
 ```bash
-agent-prism start <package> [options]
+agent-prism <package> [options]
 
 Options:
   --host TEXT      Server host (default: 0.0.0.0)
@@ -107,13 +101,9 @@ Options:
   --dev            Development mode (Vite dev server)
 ```
 
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Fork the repository, create a feature branch, and submit a Pull Request.
-
----
 
 ## 📄 License
 
