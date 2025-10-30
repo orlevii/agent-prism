@@ -1,5 +1,4 @@
 import importlib
-import inspect
 import logging
 import os
 import pkgutil
@@ -57,6 +56,10 @@ class _AgentLoader:
         modules: list[types.ModuleType] = []
         for module_info in pkgutil.walk_packages(pkg.__path__, prefix=f"{package}."):
             module_name = module_info.name
+            print("module_name:", module_name)
+            # Only import modules with __prisim suffix
+            if not module_name.endswith("__prisim"):
+                continue
             try:
                 module = importlib.import_module(module_name)
                 modules.append(module)
@@ -64,19 +67,7 @@ class _AgentLoader:
                 logger.warning(f"Failed to import module '{module_name}': {e}")
         return modules
 
-    def _extract_agents_from_module(
-        self, module: types.ModuleType
-    ) -> dict[str, Agent[Any, Any]]:
-        agents: dict[str, Agent[Any, Any]] = {}
-        for name, obj in inspect.getmembers(module):
-            if isinstance(obj, Agent) and not name.startswith("_"):
-                agents[name] = obj
-        return agents
-
-    def _resolve_agent_name(self, agent: Agent[Any, Any], variable_name: str) -> str:
-        return getattr(agent, "name", None) or variable_name
-
-    def _register_agent(
+    def register_agent(
         self, agent_name: str, agent: Agent[Any, Any], module_name: str
     ) -> None:
         if agent_name in self._agents:
@@ -94,13 +85,7 @@ class _AgentLoader:
             logger.warning(f"'{package}' is not a package, skipping")
             return
 
-        modules = self._discover_modules(pkg, package)
-
-        for module in modules:
-            agents = self._extract_agents_from_module(module)
-            for var_name, agent in agents.items():
-                agent_name = self._resolve_agent_name(agent, var_name)
-                self._register_agent(agent_name, agent, module.__name__)
+        self._discover_modules(pkg, package)
 
     def get_agent_by_name(self, agent_name: str) -> Agent[Any, Any]:
         return self._agents[agent_name]

@@ -103,7 +103,9 @@ async def stream_auto_mode(
 
     try:
         async for event in agent.run_stream_events(
-            message, message_history=message_history, deps=dependencies
+            message,
+            message_history=message_history,
+            deps=agent.deps_type(**dependencies),
         ):
             if isinstance(event, PartStartEvent):
                 if isinstance(event.part, TextPart):
