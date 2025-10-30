@@ -1,16 +1,28 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncIterator
 
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from agentbook.agents import agent_loader
 from agentbook.api import api_router
 
 static_dir = Path(__file__).parent / "static"
 
-app = FastAPI(title="Agent Prism")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    package = os.getenv("AGENT_PRISM_PACKAGE")
+    assert package
+    agent_loader.load(package)
+    yield
+
+
+app = FastAPI(title="Agent Prism", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
