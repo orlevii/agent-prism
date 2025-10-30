@@ -111,7 +111,7 @@ def build_message_history(
     return messages
 
 
-async def stream_auto_mode(
+async def stream_agent_events(
     agent_name: str,
     message: str,
     message_history: list[ModelMessage],
@@ -166,13 +166,16 @@ async def chat(req: ChatRequest) -> StreamingResponse:
     current_message = last_message.get("content", "")
 
     async def stream() -> AsyncIterator[bytes]:
-        if req.use_tools == "auto":
-            async for event in stream_auto_mode(
-                agent_name=req.agent,
-                message=current_message,
-                message_history=message_history,
-                dependencies=req.dependencies,
-            ):
-                yield f"{event.model_dump_json()}\n".encode()
+        if req.use_tools == "request_approval":
+            # TODO: monkey patch ALL agent tools so they all raise ApprovalRequired
+            pass
+
+        async for event in stream_agent_events(
+            agent_name=req.agent,
+            message=current_message,
+            message_history=message_history,
+            dependencies=req.dependencies,
+        ):
+            yield f"{event.model_dump_json()}\n".encode()
 
     return StreamingResponse(content=stream(), media_type="application/x-ndjson")
