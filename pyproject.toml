@@ -27,14 +27,14 @@ python-dotenv = "^1.2.1"
 pydantic-ai = "^1.7.0"
 
 [tool.poe.tasks]
-lint = "ruff check src tests"
+lint = "ruff check src tests examples"
 format = [
-    { cmd = "ruff format src tests" },
-    { cmd = "ruff check src tests --fix" },
+    { cmd = "ruff format src tests examples" },
+    { cmd = "ruff check src tests examples --fix" },
 ]
 "format:unsafe" = [
-    { cmd = "ruff format src tests" },
-    { cmd = "ruff check src tests --fix --unsafe-fixes" },
+    { cmd = "ruff format src tests examples" },
+    { cmd = "ruff check src tests examples --fix --unsafe-fixes" },
 ]
 test = "pytest"
 mypy = "mypy -p agent_prism -p tests"

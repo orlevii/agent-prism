@@ -31,7 +31,6 @@ Agent Prism automatically discovers your `pydantic-ai` agents, loads them into a
 - 🔄 **Streaming Support** - Watch agent responses, thinking, and tool calls as they happen
 - 🧩 **Dependency Injection** - Configure and switch between different dependency contexts
 - 🛠️ **Tool Visualization** - See exactly what tools agents call with arguments and results
-- 🎭 **Multi-Agent Support** - Test multiple agents in the same environment
 - 📦 **Type-Safe** - Full TypeScript and Python type hints throughout
 
 ## 🚀 Quick Start
@@ -44,7 +43,7 @@ pip install agent-prism
 
 ### Basic Example
 
-Create an agent file with the `__prisim` suffix (e.g., `support_agent__prisim.py`):
+Create an agent file with the `__prism` suffix (e.g., `support_agent__prism.py`):
 
 ```python
 from pydantic_ai import Agent, RunContext
