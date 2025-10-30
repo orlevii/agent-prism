@@ -1,14 +1,18 @@
-from typing import Any, AsyncIterator, Literal
+from dataclasses import replace
+from typing import Any, AsyncIterator, Callable, Literal
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pydantic_ai import (
     AgentRunResultEvent,
+    ApprovalRequired,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
+    FunctionToolset,
     PartDeltaEvent,
     PartStartEvent,
+    RunContext,
     TextPartDelta,
     ThinkingPartDelta,
 )
@@ -21,6 +25,7 @@ from pydantic_ai.messages import (
     ToolReturnPart,
     UserPromptPart,
 )
+from pydantic_ai.tools import ToolFuncEither
 
 from .agents import agent_loader
 from .types import (
@@ -111,44 +116,66 @@ def build_message_history(
     return messages
 
 
+def _wrap_for_approval(fn: Callable[..., Any]) -> ToolFuncEither[Any]:
+    def decorator(ctx: RunContext[Any], **kwargs: Any) -> Any:
+        if not ctx.tool_call_approved:
+            raise ApprovalRequired
+        return fn(ctx, **kwargs)
+
+    return decorator
+
+
 async def stream_agent_events(
     agent_name: str,
     message: str,
     message_history: list[ModelMessage],
     dependencies: dict[str, Any],
+    use_tools: Literal["auto", "request_approval"],
 ) -> AsyncIterator[StreamEventType]:
     agent = agent_loader.get_agent_by_name(agent_name)
+    toolsets = agent.toolsets
+    if use_tools == "request_approval":
+        toolsets = []
+        for ts in toolsets:
+            assert isinstance(ts, FunctionToolset)
+            new_ts = FunctionToolset()
+            for tool in ts.tools.values():
+                new_tool = replace(tool)
+                new_tool.function = _wrap_for_approval(tool.function)
+                new_ts.add_tool(new_tool)
+            toolsets.append(new_ts)
 
-    try:
-        async for event in agent.run_stream_events(
-            message,
-            message_history=message_history,
-            deps=agent.deps_type(**dependencies),
-        ):
-            if isinstance(event, PartStartEvent):
-                if isinstance(event.part, TextPart):
-                    yield TextDeltaEvent(delta=event.part.content)
-            elif isinstance(event, PartDeltaEvent):
-                if isinstance(event.delta, TextPartDelta):
-                    yield TextDeltaEvent(delta=event.delta.content_delta)
-                elif isinstance(event.delta, ThinkingPartDelta):
-                    yield ThinkingDeltaEvent(delta=str(event.delta.content_delta))
-            elif isinstance(event, FunctionToolCallEvent):
-                yield ToolCallExecutingEvent(
-                    tool_call_id=event.part.tool_call_id,
-                    tool_name=event.part.tool_name,
-                    arguments=event.part.args_as_dict(),
-                )
-            elif isinstance(event, FunctionToolResultEvent):
-                yield ToolResultEvent(
-                    tool_call_id=event.tool_call_id,
-                    result=event.result.content,
-                )
-            elif isinstance(event, AgentRunResultEvent):
-                yield DoneEvent(status="complete")
-    except Exception as e:
-        yield ErrorEvent(error=str(e))
-        yield DoneEvent(status="complete")
+    with agent.override(toolsets=toolsets):
+        try:
+            async for event in agent.run_stream_events(
+                message,
+                message_history=message_history,
+                deps=agent.deps_type(**dependencies),
+            ):
+                if isinstance(event, PartStartEvent):
+                    if isinstance(event.part, TextPart):
+                        yield TextDeltaEvent(delta=event.part.content)
+                elif isinstance(event, PartDeltaEvent):
+                    if isinstance(event.delta, TextPartDelta):
+                        yield TextDeltaEvent(delta=event.delta.content_delta)
+                    elif isinstance(event.delta, ThinkingPartDelta):
+                        yield ThinkingDeltaEvent(delta=str(event.delta.content_delta))
+                elif isinstance(event, FunctionToolCallEvent):
+                    yield ToolCallExecutingEvent(
+                        tool_call_id=event.part.tool_call_id,
+                        tool_name=event.part.tool_name,
+                        arguments=event.part.args_as_dict(),
+                    )
+                elif isinstance(event, FunctionToolResultEvent):
+                    yield ToolResultEvent(
+                        tool_call_id=event.tool_call_id,
+                        result=event.result.content,
+                    )
+                elif isinstance(event, AgentRunResultEvent):
+                    yield DoneEvent(status="complete")
+        except Exception as e:
+            yield ErrorEvent(error=str(e))
+            yield DoneEvent(status="complete")
 
 
 @api_router.post("/chat")
@@ -175,6 +202,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
             message=current_message,
             message_history=message_history,
             dependencies=req.dependencies,
+            use_tools=req.use_tools,
         ):
             yield f"{event.model_dump_json()}\n".encode()
 
