@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Message, ToolResponse } from '../../types/playground';
 import ToolCallMock from './ToolCallMock';
 import { Button } from '@/components/ui/button';
+import { detectTextDirection } from '../../utils/text';
 
 interface ToolCallGroupProps {
   messages: Message[]; // All messages in the same response group with tool calls
@@ -80,20 +81,6 @@ export default function ToolCallGroup({ messages, onToolResponsesSubmit }: ToolC
           )}
         </div>
 
-        {/* Show content from messages (if any) */}
-        {messages.some((msg) => msg.content) && (
-          <div className="mb-4">
-            {messages.map(
-              (msg) =>
-                msg.content && (
-                  <div key={msg.id} className="whitespace-pre-wrap break-words leading-relaxed">
-                    {msg.content}
-                  </div>
-                )
-            )}
-          </div>
-        )}
-
         {/* Tool Calls */}
         <div className="space-y-3">
           {allToolCallsWithResults.map((toolCall, index) => (
@@ -119,6 +106,24 @@ export default function ToolCallGroup({ messages, onToolResponsesSubmit }: ToolC
             </div>
           )}
         </div>
+
+        {/* Show content from messages (if any) */}
+        {messages.some((msg) => msg.content) && (
+          <div className="mt-4">
+            {messages.map(
+              (msg) =>
+                msg.content && (
+                  <div
+                    key={msg.id}
+                    className="whitespace-pre-wrap break-words leading-relaxed"
+                    dir={detectTextDirection(msg.content)}
+                  >
+                    {msg.content}
+                  </div>
+                )
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
