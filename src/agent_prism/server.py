@@ -8,8 +8,8 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from agentbook.agents import agent_loader
-from agentbook.api import api_router
+from agent_prism.agents import agent_loader
+from agent_prism.api import api_router
 
 static_dir = Path(__file__).parent / "static"
 

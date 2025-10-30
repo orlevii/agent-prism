@@ -27,7 +27,7 @@ class StartCommand(BaseCommand[StartCommandParams]):
     def run(self) -> None:
         self._prep_env()
         uvicorn.run(
-            "agentbook.server:app",
+            "agent_prism.server:app",
             host=self.params.host,
             port=self.params.port,
             root_path=self.params.root_path,

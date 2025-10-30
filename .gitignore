@@ -67,4 +67,5 @@ _data/
 errors/
 /logs/
 
-src/agentbook/static/
+.vite/
+src/agent_prism/static/

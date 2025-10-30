@@ -7,7 +7,7 @@ def build():
     """Build React app before Python packaging."""
     root = Path(__file__).parent
     webui_dir = root / "webui"
-    static_dir = root / "src" / "agentbook" / "static"
+    static_dir = root / "src" / "agent_prism" / "static"
 
     # Build React app
     print("📦 Building React frontend...")
