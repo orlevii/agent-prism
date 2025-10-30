@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Message, ToolResponse, ToolCall } from '../../types/playground';
+import type { Message, ToolResponse } from '../../types/playground';
 import ToolCallMock from './ToolCallMock';
 import { Button } from '@/components/ui/button';
 
@@ -11,15 +11,23 @@ interface ToolCallGroupProps {
 export default function ToolCallGroup({ messages, onToolResponsesSubmit }: ToolCallGroupProps) {
   const [toolResponses, setToolResponses] = useState<Map<number, string>>(new Map());
 
-  // Collect all tool calls from all messages
-  const allToolCalls: ToolCall[] = [];
+  // Collect all tool calls from all messages (support both formats)
+  const allToolCallsWithResults: Array<{
+    id: string;
+    name: string;
+    arguments: Record<string, unknown>;
+    result?: unknown;
+    isExecuting?: boolean;
+  }> = [];
+
   messages.forEach((msg) => {
-    if (msg.tool_calls) {
-      allToolCalls.push(...msg.tool_calls);
+    if (msg.tool_calls_with_results) {
+      allToolCallsWithResults.push(...msg.tool_calls_with_results);
     }
   });
 
-  const allResponsesSubmitted = toolResponses.size === allToolCalls.length;
+  const pendingApproval = messages.some((msg) => msg.pending_approval);
+  const allResponsesSubmitted = toolResponses.size === allToolCallsWithResults.length;
 
   // Reset tool responses if messages change
   useEffect(() => {
@@ -42,7 +50,7 @@ export default function ToolCallGroup({ messages, onToolResponsesSubmit }: ToolC
     }
   };
 
-  if (allToolCalls.length === 0) {
+  if (allToolCallsWithResults.length === 0) {
     return null;
   }
 
@@ -88,18 +96,19 @@ export default function ToolCallGroup({ messages, onToolResponsesSubmit }: ToolC
 
         {/* Tool Calls */}
         <div className="space-y-3">
-          {allToolCalls.map((toolCall, index) => (
+          {allToolCallsWithResults.map((toolCall, index) => (
             <ToolCallMock
-              key={index}
+              key={toolCall.id || index}
               toolCall={toolCall}
               index={index}
+              needsApproval={pendingApproval}
               onResponseSubmit={handleResponseSubmit}
               existingResponse={toolResponses.get(index)}
             />
           ))}
 
-          {/* Continue Conversation Button */}
-          {allResponsesSubmitted && !messages.some((msg) => msg.isStreaming) && (
+          {/* Continue Conversation Button - only show for pending approval */}
+          {pendingApproval && allResponsesSubmitted && !messages.some((msg) => msg.isStreaming) && (
             <div className="flex justify-center pt-2">
               <Button
                 onClick={handleContinueConversation}

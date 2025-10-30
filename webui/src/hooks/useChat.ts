@@ -71,7 +71,6 @@ export function useChat() {
         const result = await processStream({
           stream: response,
           initialMessageId,
-          responseGroupId,
           abortControllerRef,
           setMessages,
         });
@@ -172,7 +171,6 @@ export function useChat() {
         const result = await processStream({
           stream: response,
           initialMessageId,
-          responseGroupId,
           abortControllerRef,
           setMessages,
         });
@@ -262,7 +260,6 @@ export function useChat() {
         const result = await processStream({
           stream: response,
           initialMessageId,
-          responseGroupId: newResponseGroupId,
           abortControllerRef,
           setMessages,
         });

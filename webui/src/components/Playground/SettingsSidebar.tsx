@@ -31,9 +31,7 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
             placeholder="http://localhost:8000"
             className="font-mono text-sm"
           />
-          <p className="text-xs text-muted-foreground">
-            API server endpoint
-          </p>
+          <p className="text-xs text-muted-foreground">API server endpoint</p>
         </div>
 
         {/* Agent Selector */}

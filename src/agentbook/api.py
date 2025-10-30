@@ -2,7 +2,7 @@ from typing import Any, AsyncIterator, Literal
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from pydantic_ai import (
     AgentRunResultEvent,
     FunctionToolCallEvent,
@@ -46,11 +46,10 @@ async def get_agents() -> GetAgentsResponse:
 
 
 class ChatRequest(BaseModel):
-    agent_name: str
-    message: str
+    agent: str
+    messages: list[dict[str, Any]]
+    dependencies: dict[str, Any] = {}
     use_tools: Literal["auto", "request_approval"] = "auto"
-    conversation_history: list[dict[str, Any]] = Field(default_factory=list)
-    deferred_tool_results: dict[str, Any] | None = None
 
 
 def build_message_history(
@@ -98,12 +97,13 @@ async def stream_auto_mode(
     agent_name: str,
     message: str,
     message_history: list[ModelMessage],
+    dependencies: dict[str, Any],
 ) -> AsyncIterator[StreamEventType]:
     agent = agent_loader.get_agent_by_name(agent_name)
 
     try:
         async for event in agent.run_stream_events(
-            message, message_history=message_history
+            message, message_history=message_history, deps=dependencies
         ):
             if isinstance(event, PartStartEvent):
                 if isinstance(event.part, TextPart):
@@ -131,14 +131,27 @@ async def stream_auto_mode(
         yield DoneEvent(status="complete")
 
 
-@api_router.post("/api/chat")
+@api_router.post("/chat")
 async def chat(req: ChatRequest) -> StreamingResponse:
-    message_history = build_message_history(req.conversation_history)
+    # Extract the last user message and build conversation history
+    if not req.messages:
+        raise ValueError("No messages provided")
+
+    # Get all messages except the last one as conversation history
+    conversation_history = req.messages[:-1] if len(req.messages) > 1 else []
+    message_history = build_message_history(conversation_history)
+
+    # Get the last message content as the current message
+    last_message = req.messages[-1]
+    current_message = last_message.get("content", "")
 
     async def stream() -> AsyncIterator[bytes]:
         if req.use_tools == "auto":
             async for event in stream_auto_mode(
-                req.agent_name, req.message, message_history
+                agent_name=req.agent,
+                message=current_message,
+                message_history=message_history,
+                dependencies=req.dependencies,
             ):
                 yield f"{event.model_dump_json()}\n".encode()
 

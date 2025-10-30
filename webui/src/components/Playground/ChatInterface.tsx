@@ -31,16 +31,23 @@ export default function ChatInterface({
     messages.forEach((message) => {
       if (processedIds.has(message.id)) return;
 
-      // Check if this message has a responseGroupId and tool_calls
-      if (message.responseGroupId && message.tool_calls && message.role === 'assistant') {
+      // Check if this message has a responseGroupId and tool_calls (new or old format)
+      const hasToolCalls =
+        (message.tool_calls_with_results && message.tool_calls_with_results.length > 0) ||
+        (message.tool_calls && message.tool_calls.length > 0);
+
+      if (message.responseGroupId && hasToolCalls && message.role === 'assistant') {
         // Find all messages in this response group with tool calls
-        const groupMessages = messages.filter(
-          (msg) =>
+        const groupMessages = messages.filter((msg) => {
+          const msgHasToolCalls =
+            (msg.tool_calls_with_results && msg.tool_calls_with_results.length > 0) ||
+            (msg.tool_calls && msg.tool_calls.length > 0);
+          return (
             msg.responseGroupId === message.responseGroupId &&
             msg.role === 'assistant' &&
-            msg.tool_calls &&
-            msg.tool_calls.length > 0
-        );
+            msgHasToolCalls
+          );
+        });
 
         // Mark all as processed
         groupMessages.forEach((msg) => processedIds.add(msg.id));

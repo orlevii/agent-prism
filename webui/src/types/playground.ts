@@ -17,7 +17,15 @@ export interface Message {
   timestamp: number;
   isStreaming?: boolean;
   thinking?: string;
-  tool_calls?: ToolCall[];
+  tool_calls?: ToolCall[]; // Legacy format for backward compatibility
+  tool_calls_with_results?: Array<{
+    id: string;
+    name: string;
+    arguments: Record<string, unknown>;
+    result?: unknown;
+    isExecuting?: boolean;
+  }>;
+  pending_approval?: boolean; // Indicates if tool calls require manual approval
   tool_responses?: ToolResponse[];
   tool_name?: string; // For tool response messages
   responseGroupId?: string; // Groups related assistant messages from same streaming response

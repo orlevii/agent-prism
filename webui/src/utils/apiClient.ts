@@ -1,4 +1,4 @@
-import type { ChatRequest, StreamChunk } from '../types/agent';
+import type { ChatRequest, StreamEvent } from '../types/agent';
 
 export const initializeApiClient = (baseUrl: string) => {
   return {
@@ -10,7 +10,7 @@ export const initializeApiClient = (baseUrl: string) => {
 export const makeStreamingChatRequest = async function* (
   client: ReturnType<typeof initializeApiClient>,
   request: ChatRequest
-): AsyncGenerator<StreamChunk> {
+): AsyncGenerator<StreamEvent> {
   const response = await fetch(`${client.baseUrl}/api/chat`, {
     method: 'POST',
     headers: {
@@ -42,7 +42,7 @@ export const makeStreamingChatRequest = async function* (
 
       for (const line of lines) {
         try {
-          const data = JSON.parse(line) as StreamChunk;
+          const data = JSON.parse(line) as StreamEvent;
           yield data;
         } catch {
           // Skip invalid JSON lines
