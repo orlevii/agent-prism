@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "agentbook"
+version = "0.0.1"
+description = "The Storybook for AI Agents"
+authors = ["Or Levi <orlevi128@gmail.com>"]
+packages = [{ include = "agentbook", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+ipdb = "^0.13.13"
+mypy = "^1.18.2"
+pytest = "^8.4.2"
+pytest-asyncio = "^1.2.0"
+pytest-cov = "^7.0.0"
+pytest-env = "^1.2.0"
+pytest-mock = "^3.15.1"
+python-dotenv = "^1.2.1"
+
+[tool.poe.tasks]
+lint = "ruff check src tests"
+format = [
+    { cmd = "ruff format src tests" },
+    { cmd = "ruff check src tests --fix" },
+]
+"format:unsafe" = [
+    { cmd = "ruff format src tests" },
+    { cmd = "ruff check src tests --fix --unsafe-fixes" },
+]
+test = "pytest"
+mypy = "mypy -p agentbook -p tests"
+
+[tool.pytest.ini_options]
+addopts = "--cov=agentbook --cov tests -v"
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "strict"
+env = ["TEST=true", "ENV=test"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
