@@ -117,7 +117,7 @@ def build_message_history(
     return messages
 
 
-def _wrap_for_approval(fn: Callable[..., Any]) -> ToolFuncEither[Any]:
+def _wrap_for_approval(fn: Callable[..., Any]) -> ToolFuncEither:
     def decorator(ctx: RunContext[Any], **kwargs: Any) -> Any:
         if not ctx.tool_call_approved:
             raise ApprovalRequired
@@ -146,7 +146,7 @@ async def stream_agent_events(
                 new_ts.add_tool(new_tool)
             toolsets.append(new_ts)
 
-    with agent.override(toolsets=toolsets):
+    with agent.override():
         try:
             async for event in agent.run_stream_events(
                 message,

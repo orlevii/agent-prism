@@ -33,6 +33,7 @@ class ErrorEvent(BaseModel):
 
 
 class MessageHistoryEvent(BaseModel):
+    type: Literal["message_history"] = "message_history"
     message_history: list[dict[str, Any]]
 
 

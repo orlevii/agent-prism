@@ -1,42 +1,37 @@
 import { useCallback } from 'react';
-import type { Message } from '../types/playground';
 import type { StreamEvent } from '../types/agent';
+import type { ModelMessage } from '../types/message';
 
 interface ProcessStreamOptions {
   stream: AsyncIterable<StreamEvent>;
-  initialMessageId: string;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<ModelMessage[]>>;
 }
 
 interface ProcessStreamResult {
-  currentMessageId: string;
-  assistantMessageIds: string[];
+  completed: boolean;
 }
 
 export function useStreamingResponse() {
   const processStream = useCallback(
     async ({
       stream,
-      initialMessageId,
       abortControllerRef,
       setMessages,
     }: ProcessStreamOptions): Promise<ProcessStreamResult> => {
+      // Accumulate deltas for real-time UI updates
       let accumulatedContent = '';
       let accumulatedThinking = '';
       const toolCallsMap = new Map<
         string,
         {
-          id: string;
-          name: string;
-          arguments: Record<string, unknown>;
+          tool_call_id: string;
+          tool_name: string;
+          args: Record<string, unknown>;
           result?: unknown;
           isExecuting?: boolean;
         }
       >();
-      const currentMessageId = initialMessageId;
-      const assistantMessageIds: string[] = [initialMessageId];
-      let pendingApproval = false;
 
       for await (const event of stream) {
         // Check if request was aborted
@@ -48,19 +43,84 @@ export function useStreamingResponse() {
         switch (event.type) {
           case 'text_delta':
             accumulatedContent += event.delta;
+            // Update the last message with accumulated text
+            setMessages((prev) => {
+              if (prev.length === 0) return prev;
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg.kind !== 'response') return prev;
+
+              // Find or create text part
+              const parts = [...lastMsg.parts];
+              const textPartIndex = parts.findIndex((p) => p.part_kind === 'text');
+
+              if (textPartIndex >= 0) {
+                parts[textPartIndex] = {
+                  ...parts[textPartIndex],
+                  part_kind: 'text',
+                  content: accumulatedContent,
+                };
+              } else {
+                parts.push({
+                  part_kind: 'text',
+                  content: accumulatedContent,
+                });
+              }
+
+              return [...prev.slice(0, -1), { ...lastMsg, parts }];
+            });
             break;
 
           case 'thinking_delta':
             accumulatedThinking += event.delta;
+            // Update the last message with accumulated thinking
+            setMessages((prev) => {
+              if (prev.length === 0) return prev;
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg.kind !== 'response') return prev;
+
+              const parts = [...lastMsg.parts];
+              const thinkingPartIndex = parts.findIndex((p) => p.part_kind === 'thinking');
+
+              if (thinkingPartIndex >= 0) {
+                parts[thinkingPartIndex] = {
+                  ...parts[thinkingPartIndex],
+                  part_kind: 'thinking',
+                  content: accumulatedThinking,
+                };
+              } else {
+                parts.push({
+                  part_kind: 'thinking',
+                  content: accumulatedThinking,
+                });
+              }
+
+              return [...prev.slice(0, -1), { ...lastMsg, parts }];
+            });
             break;
 
           case 'tool_call_executing':
-            // Add or update tool call with executing status
+            // Track tool call for UI updates
             toolCallsMap.set(event.tool_call_id, {
-              id: event.tool_call_id,
-              name: event.tool_name,
-              arguments: event.arguments,
+              tool_call_id: event.tool_call_id,
+              tool_name: event.tool_name,
+              args: event.arguments,
               isExecuting: true,
+            });
+            // Update the last message with tool call
+            setMessages((prev) => {
+              if (prev.length === 0) return prev;
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg.kind !== 'response') return prev;
+
+              const parts = [...lastMsg.parts];
+              parts.push({
+                part_kind: 'tool-call',
+                tool_name: event.tool_name,
+                tool_call_id: event.tool_call_id,
+                args: event.arguments,
+              });
+
+              return [...prev.slice(0, -1), { ...lastMsg, parts }];
             });
             break;
 
@@ -77,44 +137,29 @@ export function useStreamingResponse() {
             break;
           }
 
+          case 'message_history':
+            // Replace entire message history with authoritative backend data
+            try {
+              const modelMessages: ModelMessage[] = event.message_history.map(
+                (msg) => msg as unknown as ModelMessage
+              );
+              setMessages(modelMessages);
+            } catch (err) {
+              console.error('Failed to parse message history:', err);
+            }
+            break;
+
           case 'error':
-            // Handle error event - you might want to show this in the UI
             console.error('Stream error:', event.error);
             break;
 
           case 'done':
-            // Set approval status based on done status
-            pendingApproval = event.status === 'pending_approval';
+            // Stream completed
             break;
         }
-
-        // Update current message with accumulated data
-        const toolCallsArray = Array.from(toolCallsMap.values());
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === currentMessageId
-              ? {
-                  ...msg,
-                  content: accumulatedContent,
-                  ...(accumulatedThinking && { thinking: accumulatedThinking }),
-                  ...(toolCallsArray.length > 0 && {
-                    tool_calls_with_results: toolCallsArray,
-                  }),
-                  ...(pendingApproval && { pending_approval: true }),
-                }
-              : msg
-          )
-        );
       }
 
-      // Mark all streaming messages as complete
-      setMessages((prev) =>
-        prev.map((msg) =>
-          assistantMessageIds.includes(msg.id) ? { ...msg, isStreaming: false } : msg
-        )
-      );
-
-      return { currentMessageId, assistantMessageIds };
+      return { completed: true };
     },
     []
   );

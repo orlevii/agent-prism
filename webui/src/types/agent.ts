@@ -67,6 +67,11 @@ export interface ErrorEvent {
   error: string;
 }
 
+export interface MessageHistoryEvent {
+  type: 'message_history';
+  message_history: Array<Record<string, unknown>>;
+}
+
 export interface DoneEvent {
   type: 'done';
   status: DoneStatus;
@@ -78,6 +83,7 @@ export type StreamEvent =
   | ToolCallExecutingEvent
   | ToolResultEvent
   | ErrorEvent
+  | MessageHistoryEvent
   | DoneEvent;
 
 // Tool call with result for UI display
