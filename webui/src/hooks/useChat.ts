@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { PlaygroundSettings } from '../types/playground';
 import type { ModelMessage } from '../types/message';
-import { buildApiMessagesFromModelMessages } from '../utils/messageBuilder';
 import { initializeApiClient, makeStreamingChatRequest } from '../utils/apiClient';
 import { useStreamingResponse } from './useStreamingResponse';
 
@@ -46,7 +45,7 @@ export function useChat() {
       setMessages((prev) => [...prev, assistantMessage]);
 
       try {
-        const apiMessages = buildApiMessagesFromModelMessages(messages.concat(userMessage));
+        const apiMessages = messages.concat(userMessage);
         const apiClient = initializeApiClient(settings.baseUrl);
         apiClientRef.current = apiClient;
 

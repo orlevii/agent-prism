@@ -1,3 +1,5 @@
+import { ModelMessage } from './message';
+
 export interface DependencyInfo {
   name: string;
   data: Record<string, unknown>;
@@ -31,7 +33,7 @@ export interface ApiMessage {
 
 export interface ChatRequest {
   agent: string;
-  messages: ApiMessage[];
+  messages: ModelMessage[];
   dependencies?: Record<string, unknown>;
   stream?: boolean;
 }

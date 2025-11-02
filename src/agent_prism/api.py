@@ -1,6 +1,9 @@
 from dataclasses import asdict, replace
+from datetime import datetime
 from typing import Any, AsyncIterator, Callable, Literal
 
+import dacite
+from dacite import from_dict
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -21,9 +24,6 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     TextPart,
-    ToolCallPart,
-    ToolReturnPart,
-    UserPromptPart,
 )
 from pydantic_ai.tools import ToolFuncEither
 
@@ -80,39 +80,23 @@ def build_message_history(
     conversation_history: list[dict[str, Any]],
 ) -> list[ModelMessage]:
     messages: list[ModelMessage] = []
-
+    dacite_config = dacite.Config(
+        type_hooks={
+            datetime: lambda s: datetime.fromisoformat(s.replace("Z", "+00:00"))
+        }
+    )
     for msg in conversation_history:
-        role = msg.get("role")
-        content = msg.get("content", "")
-
-        if role == "user":
-            messages.append(ModelRequest(parts=[UserPromptPart(content=content)]))
-        elif role == "assistant":
-            parts: list[TextPart | ToolCallPart] = []
-            if content:
-                parts.append(TextPart(content=content))
-
-            tool_calls = msg.get("tool_calls", [])
-            for tc in tool_calls:
-                tool_call_id = tc.get("tool_call_id", "")
-                tool_name = tc.get("tool_name", "")
-                args = tc.get("arguments", {})
-                parts.append(
-                    ToolCallPart(
-                        tool_name=tool_name, args=args, tool_call_id=tool_call_id
-                    )
-                )
-
-            if parts:
-                messages.append(ModelResponse(parts=parts))
-        elif role == "tool":
-            tool_call_id = msg.get("tool_call_id", "")
-            result = msg.get("result")
+        kind = msg.get("kind")
+        if kind == "request":
             messages.append(
-                ModelRequest(
-                    parts=[ToolReturnPart(tool_name=tool_call_id, content=result)]
-                )
+                from_dict(data_class=ModelRequest, data=msg, config=dacite_config)
             )
+        elif kind == "response":
+            messages.append(
+                from_dict(data_class=ModelResponse, data=msg, config=dacite_config)
+            )
+        else:
+            raise RuntimeError(f"Unkown kind={kind}")
 
     return messages
 
@@ -128,7 +112,7 @@ def _wrap_for_approval(fn: Callable[..., Any]) -> ToolFuncEither:
 
 async def stream_agent_events(
     agent_name: str,
-    message: str,
+    user_prompt: str | None,
     message_history: list[ModelMessage],
     dependencies: dict[str, Any],
     use_tools: Literal["auto", "request_approval"],
@@ -149,7 +133,7 @@ async def stream_agent_events(
     with agent.override():
         try:
             async for event in agent.run_stream_events(
-                message,
+                user_prompt,
                 message_history=message_history,
                 deps=agent.deps_type(**dependencies),
             ):
@@ -189,12 +173,17 @@ async def chat(req: ChatRequest) -> StreamingResponse:
         raise ValueError("No messages provided")
 
     # Get all messages except the last one as conversation history
-    conversation_history = req.messages[:-1] if len(req.messages) > 1 else []
-    message_history = build_message_history(conversation_history)
+    message_history = build_message_history(req.messages)
+    user_prompt: str | None = None
+    last_message = message_history[-1]
+    if (
+        last_message.kind == "request"
+        and last_message.parts[0].part_kind == "user-prompt"
+    ):
+        message_history.pop()
+        user_prompt = str(last_message.parts[0].content)
 
     # Get the last message content as the current message
-    last_message = req.messages[-1]
-    current_message = last_message.get("content", "")
 
     async def stream() -> AsyncIterator[bytes]:
         if req.use_tools == "request_approval":
@@ -203,7 +192,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 
         async for event in stream_agent_events(
             agent_name=req.agent,
-            message=current_message,
+            user_prompt=user_prompt,
             message_history=message_history,
             dependencies=req.dependencies,
             use_tools=req.use_tools,
