@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import asdict, replace
 from typing import Any, AsyncIterator, Callable, Literal
 
 from fastapi import APIRouter
@@ -31,6 +31,7 @@ from .agents import agent_loader
 from .types import (
     DoneEvent,
     ErrorEvent,
+    MessageHistoryEvent,
     StreamEventType,
     TextDeltaEvent,
     ThinkingDeltaEvent,
@@ -172,6 +173,9 @@ async def stream_agent_events(
                         result=event.result.content,
                     )
                 elif isinstance(event, AgentRunResultEvent):
+                    yield MessageHistoryEvent(
+                        message_history=[asdict(m) for m in event.result.all_messages()]
+                    )
                     yield DoneEvent(status="complete")
         except Exception as e:
             yield ErrorEvent(error=str(e))

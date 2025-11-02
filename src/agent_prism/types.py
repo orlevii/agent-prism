@@ -32,6 +32,10 @@ class ErrorEvent(BaseModel):
     error: str
 
 
+class MessageHistoryEvent(BaseModel):
+    message_history: list[dict[str, Any]]
+
+
 class DoneEvent(BaseModel):
     type: Literal["done"] = "done"
     status: Literal["complete", "pending_approval"]
@@ -43,6 +47,7 @@ StreamEventType = (
     | ToolCallExecutingEvent
     | ToolResultEvent
     | ErrorEvent
+    | MessageHistoryEvent
     | DoneEvent
 )
 
