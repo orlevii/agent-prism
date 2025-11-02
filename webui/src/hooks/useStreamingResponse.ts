@@ -134,6 +134,24 @@ export function useStreamingResponse() {
                 isExecuting: false,
               });
             }
+
+            // Add tool return part to the last message
+            setMessages((prev) => {
+              if (prev.length === 0) return prev;
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg.kind !== 'response') return prev;
+
+              const parts = [...lastMsg.parts];
+              parts.push({
+                part_kind: 'tool-return',
+                tool_name: existingToolCall?.tool_name || '',
+                content: event.result,
+                tool_call_id: event.tool_call_id,
+                timestamp: new Date().toISOString(),
+              });
+
+              return [...prev.slice(0, -1), { ...lastMsg, parts }];
+            });
             break;
           }
 
