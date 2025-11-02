@@ -126,11 +126,13 @@ async def stream_agent_events(
             new_ts = FunctionToolset()
             for tool in ts.tools.values():
                 new_tool = replace(tool)
+                new_tool.function_schema = replace(tool.function_schema)
                 new_tool.function = _wrap_for_approval(tool.function)
+                new_tool.function_schema.function = new_tool.function
                 new_ts.add_tool(new_tool)
             toolsets.append(new_ts)
 
-    with agent.override():
+    with agent.override(tools=[], toolsets=toolsets):
         try:
             async for event in agent.run_stream_events(
                 user_prompt,
@@ -186,10 +188,6 @@ async def chat(req: ChatRequest) -> StreamingResponse:
     # Get the last message content as the current message
 
     async def stream() -> AsyncIterator[bytes]:
-        if req.use_tools == "request_approval":
-            # TODO: monkey patch ALL agent tools so they all raise ApprovalRequired
-            pass
-
         async for event in stream_agent_events(
             agent_name=req.agent,
             user_prompt=user_prompt,
