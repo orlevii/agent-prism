@@ -1,67 +1,35 @@
-import { useEffect, useRef, useMemo } from 'react';
-import MessageBubble from './MessageBubble';
-import ThinkingMessage from './ThinkingMessage';
-import ToolCallGroup from './ToolCallGroup';
-import type { Message, ToolResponse } from '../../types/playground';
+import { useEffect, useRef } from 'react';
+import PartRenderer from './PartRenderer';
+import type { ModelMessage, MessagePart } from '@/types/message';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 interface ChatInterfaceProps {
-  messages: Message[];
+  messages: ModelMessage[];
   error: string | null;
   isLoading?: boolean;
-  onToolResponsesSubmit?: (responseGroupId: string, responses: ToolResponse[]) => void;
-  onEditMessage?: (messageId: string, newContent: string) => void;
 }
 
-export default function ChatInterface({
-  messages,
-  error,
-  isLoading,
-  onToolResponsesSubmit,
-  onEditMessage,
-}: ChatInterfaceProps) {
+export default function ChatInterface({ messages, error, isLoading }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Group messages by responseGroupId
-  const groupedMessages = useMemo(() => {
-    const groups: Array<{ type: 'single' | 'toolGroup'; messages: Message[] }> = [];
-    const processedIds = new Set<string>();
+  // Flatten all parts from all messages
+  const allParts: Array<{
+    part: MessagePart;
+    messageKind: 'request' | 'response';
+    isLastMessage: boolean;
+  }> = [];
 
-    messages.forEach((message) => {
-      if (processedIds.has(message.id)) return;
-
-      // Check if this message has a responseGroupId and tool_calls (new or old format)
-      const hasToolCalls =
-        (message.tool_calls_with_results && message.tool_calls_with_results.length > 0) ||
-        (message.tool_calls && message.tool_calls.length > 0);
-
-      if (message.responseGroupId && hasToolCalls && message.role === 'assistant') {
-        // Find all messages in this response group with tool calls
-        const groupMessages = messages.filter((msg) => {
-          const msgHasToolCalls =
-            (msg.tool_calls_with_results && msg.tool_calls_with_results.length > 0) ||
-            (msg.tool_calls && msg.tool_calls.length > 0);
-          return (
-            msg.responseGroupId === message.responseGroupId &&
-            msg.role === 'assistant' &&
-            msgHasToolCalls
-          );
-        });
-
-        // Mark all as processed
-        groupMessages.forEach((msg) => processedIds.add(msg.id));
-
-        groups.push({ type: 'toolGroup', messages: groupMessages });
-      } else {
-        // Single message
-        processedIds.add(message.id);
-        groups.push({ type: 'single', messages: [message] });
-      }
+  messages.forEach((msg, msgIndex) => {
+    const isLastMessage = msgIndex === messages.length - 1;
+    msg.parts.forEach((part) => {
+      allParts.push({
+        part,
+        messageKind: msg.kind,
+        isLastMessage,
+      });
     });
-
-    return groups;
-  }, [messages]);
+  });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -92,58 +60,24 @@ export default function ChatInterface({
               </div>
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-500 to-violet-500 bg-clip-text text-transparent mb-3">
-              Open Playground
+              Agent Prism
             </h2>
             <p className="text-lg text-muted-foreground mb-2">
-              Start a conversation with any OpenAI-compatible LLM
+              Interactive testing environment for pydantic-ai agents
             </p>
             <p className="text-sm text-muted-foreground/70">
-              Configure your settings on the right and type a message below
+              Configure your agent on the right and start chatting below
             </p>
           </div>
         </div>
       ) : (
         <div className="max-w-4xl mx-auto">
-          {groupedMessages.map((group, index) => (
-            <div key={index}>
-              {group.type === 'toolGroup' ? (
-                <>
-                  {/* Show thinking messages for any message in the group */}
-                  {group.messages.map(
-                    (msg) =>
-                      msg.thinking && (
-                        <ThinkingMessage
-                          key={msg.id}
-                          thinking={msg.thinking}
-                          isStreaming={msg.isStreaming}
-                        />
-                      )
-                  )}
-                  {/* Render tool call group */}
-                  {onToolResponsesSubmit && (
-                    <ToolCallGroup
-                      messages={group.messages}
-                      onToolResponsesSubmit={onToolResponsesSubmit}
-                    />
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* Single message rendering */}
-                  {group.messages[0].role === 'assistant' && group.messages[0].thinking && (
-                    <ThinkingMessage
-                      thinking={group.messages[0].thinking}
-                      isStreaming={group.messages[0].isStreaming}
-                    />
-                  )}
-                  <MessageBubble
-                    message={group.messages[0]}
-                    onEdit={onEditMessage}
-                    isLoading={isLoading}
-                  />
-                </>
-              )}
-            </div>
+          {allParts.map((item, index) => (
+            <PartRenderer
+              key={index}
+              part={item.part}
+              isStreaming={isLoading && item.isLastMessage}
+            />
           ))}
           {error && (
             <Alert

@@ -1,12 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
-import type { Message, PlaygroundSettings, ToolResponse, ToolCall } from '../types/playground';
-import { buildApiMessagesWithUserInput, buildApiMessages } from '../utils/messageBuilder';
+import type { PlaygroundSettings } from '../types/playground';
+import type { ModelMessage } from '../types/message';
 import { initializeApiClient, makeStreamingChatRequest } from '../utils/apiClient';
-import { handleChatError, cleanup } from '../utils/chatErrorHandler';
 import { useStreamingResponse } from './useStreamingResponse';
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ModelMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -23,34 +22,30 @@ export function useChat() {
       setError(null);
       setIsLoading(true);
 
-      // Add user message
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content,
-        timestamp: Date.now(),
+      // Add user message as ModelRequest
+      const userMessage: ModelMessage = {
+        kind: 'request',
+        parts: [
+          {
+            part_kind: 'user-prompt',
+            content,
+            timestamp: new Date().toISOString(),
+          },
+        ],
       };
 
       setMessages((prev) => [...prev, userMessage]);
 
-      // Create response group ID and assistant message placeholder
-      const responseGroupId = crypto.randomUUID();
-      const initialMessageId = crypto.randomUUID();
-      const assistantMessage: Message = {
-        id: initialMessageId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        isStreaming: true,
-        responseGroupId,
+      // Create assistant message placeholder
+      const assistantMessage: ModelMessage = {
+        kind: 'response',
+        parts: [],
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      let assistantMessageIds: string[] = [initialMessageId];
-
       try {
-        const apiMessages = buildApiMessagesWithUserInput(messages, content);
+        const apiMessages = messages.concat(userMessage);
         const apiClient = initializeApiClient(settings.baseUrl);
         apiClientRef.current = apiClient;
 
@@ -68,18 +63,20 @@ export function useChat() {
           stream: true,
         });
 
-        const result = await processStream({
+        await processStream({
           stream: response,
-          initialMessageId,
           abortControllerRef,
           setMessages,
         });
-
-        assistantMessageIds = result.assistantMessageIds;
       } catch (err) {
-        handleChatError(err, assistantMessageIds, setError, setMessages);
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
+        // Remove the placeholder assistant message on error
+        setMessages((prev) => prev.slice(0, -1));
       } finally {
-        cleanup(setIsLoading, apiClientRef, abortControllerRef);
+        setIsLoading(false);
+        apiClientRef.current = null;
+        abortControllerRef.current = null;
       }
     },
     [messages, processStream]
@@ -99,179 +96,28 @@ export function useChat() {
     }
   }, []);
 
+  // TODO: Implement editMessage with new structure
   const editMessage = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (messageId: string, newContent: string, settings: PlaygroundSettings) => {
-      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
-
-      if (messageIndex === -1) {
-        setError('Message not found');
-        return;
-      }
-
-      const message = messages[messageIndex];
-
-      if (message.role !== 'user') {
-        setError('Only user messages can be edited');
-        return;
-      }
-
-      if (!newContent.trim() || !settings.agent) {
-        setError('Please enter a message and select an agent');
-        return;
-      }
-
-      setError(null);
-      setIsLoading(true);
-
-      // Truncate messages and add edited message
-      const updatedMessages = messages.slice(0, messageIndex);
-      const editedMessage: Message = {
-        ...message,
-        content: newContent,
-        timestamp: Date.now(),
-      };
-      updatedMessages.push(editedMessage);
-      setMessages(updatedMessages);
-
-      // Create response group ID and assistant message placeholder
-      const responseGroupId = crypto.randomUUID();
-      const initialMessageId = crypto.randomUUID();
-      const assistantMessage: Message = {
-        id: initialMessageId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        isStreaming: true,
-        responseGroupId,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      let assistantMessageIds: string[] = [initialMessageId];
-
-      try {
-        const apiMessages = buildApiMessages(updatedMessages);
-        const apiClient = initializeApiClient(settings.baseUrl);
-        apiClientRef.current = apiClient;
-
-        let dependencies: Record<string, unknown> = {};
-        try {
-          dependencies = JSON.parse(settings.dependencies || '{}');
-        } catch {
-          // If dependencies are invalid JSON, use empty object
-        }
-
-        const response = makeStreamingChatRequest(apiClient, {
-          agent: settings.agent,
-          messages: apiMessages,
-          dependencies,
-          stream: true,
-        });
-
-        const result = await processStream({
-          stream: response,
-          initialMessageId,
-          abortControllerRef,
-          setMessages,
-        });
-
-        assistantMessageIds = result.assistantMessageIds;
-      } catch (err) {
-        handleChatError(err, assistantMessageIds, setError, setMessages);
-      } finally {
-        cleanup(setIsLoading, apiClientRef, abortControllerRef);
-      }
+      setError('Edit functionality not yet implemented for new message format');
     },
-    [messages, processStream]
+    []
   );
 
+  // TODO: Implement submitToolResponses with new structure
   const submitToolResponses = useCallback(
-    async (responseGroupId: string, responses: ToolResponse[], settings: PlaygroundSettings) => {
-      setError(null);
-      setIsLoading(true);
-
-      // Collect tool calls from response group
-      const groupMessages = messages.filter((msg) => msg.responseGroupId === responseGroupId);
-      const allToolCalls: Array<{ toolCall: ToolCall; messageId: string; indexInMessage: number }> =
-        [];
-      groupMessages.forEach((msg) => {
-        if (msg.tool_calls) {
-          msg.tool_calls.forEach((toolCall, index) => {
-            allToolCalls.push({ toolCall, messageId: msg.id, indexInMessage: index });
-          });
-        }
-      });
-
-      if (allToolCalls.length === 0) {
-        setError('No tool calls found in response group');
-        setIsLoading(false);
-        return;
-      }
-
-      // Create tool response messages
-      const toolResponseMessages: Message[] = responses.map((resp) => {
-        const toolInfo = allToolCalls[resp.toolCallIndex];
-        return {
-          id: crypto.randomUUID(),
-          role: 'tool' as const,
-          content: resp.response,
-          timestamp: Date.now(),
-          tool_name: toolInfo.toolCall.function.name,
-        };
-      });
-
-      setMessages((prev) => [...prev, ...toolResponseMessages]);
-
-      // Create response group ID and assistant message placeholder
-      const newResponseGroupId = crypto.randomUUID();
-      const initialMessageId = crypto.randomUUID();
-      const assistantMessage: Message = {
-        id: initialMessageId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        isStreaming: true,
-        responseGroupId: newResponseGroupId,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      let assistantMessageIds: string[] = [initialMessageId];
-
-      try {
-        const apiMessages = buildApiMessages([...messages, ...toolResponseMessages], true);
-        const apiClient = initializeApiClient(settings.baseUrl);
-        apiClientRef.current = apiClient;
-
-        let dependencies: Record<string, unknown> = {};
-        try {
-          dependencies = JSON.parse(settings.dependencies || '{}');
-        } catch {
-          // If dependencies are invalid JSON, use empty object
-        }
-
-        const response = makeStreamingChatRequest(apiClient, {
-          agent: settings.agent,
-          messages: apiMessages,
-          dependencies,
-          stream: true,
-        });
-
-        const result = await processStream({
-          stream: response,
-          initialMessageId,
-          abortControllerRef,
-          setMessages,
-        });
-
-        assistantMessageIds = result.assistantMessageIds;
-      } catch (err) {
-        handleChatError(err, assistantMessageIds, setError, setMessages);
-      } finally {
-        cleanup(setIsLoading, apiClientRef, abortControllerRef);
-      }
+    async (
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      responseGroupId: string,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      responses: Array<{ toolCallIndex: number; response: string }>,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      settings: PlaygroundSettings
+    ) => {
+      setError('Tool response functionality not yet implemented for new message format');
     },
-    [messages, processStream]
+    []
   );
 
   return {

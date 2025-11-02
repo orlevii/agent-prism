@@ -5,31 +5,13 @@ import ThemeToggle from '../components/ThemeToggle';
 import { useChat } from '../hooks/useChat';
 import { useSettings } from '../hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import type { ToolResponse } from '../types/playground';
 
 export default function Home() {
   const { settings, updateSetting } = useSettings();
-  const {
-    messages,
-    isLoading,
-    error,
-    sendMessage,
-    clearMessages,
-    cancelRequest,
-    editMessage,
-    submitToolResponses,
-  } = useChat();
+  const { messages, isLoading, error, sendMessage, clearMessages, cancelRequest } = useChat();
 
   const handleSend = (content: string) => {
     sendMessage(content, settings);
-  };
-
-  const handleEditMessage = (messageId: string, newContent: string) => {
-    editMessage(messageId, newContent, settings);
-  };
-
-  const handleToolResponsesSubmit = (responseGroupId: string, responses: ToolResponse[]) => {
-    submitToolResponses(responseGroupId, responses, settings);
   };
 
   return (
@@ -39,9 +21,11 @@ export default function Home() {
         <div className="flex items-center justify-between max-w-[1800px] mx-auto">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-violet-500 bg-clip-text text-transparent">
-              Open Playground
+              Agent Prism
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Agent-based AI Playground</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Interactive testing for pydantic-ai agents
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -61,13 +45,7 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          <ChatInterface
-            messages={messages}
-            error={error}
-            isLoading={isLoading}
-            onToolResponsesSubmit={handleToolResponsesSubmit}
-            onEditMessage={handleEditMessage}
-          />
+          <ChatInterface messages={messages} error={error} isLoading={isLoading} />
           <ChatInput onSend={handleSend} isLoading={isLoading} onCancel={cancelRequest} />
         </div>
 
