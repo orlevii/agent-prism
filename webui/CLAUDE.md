@@ -42,7 +42,6 @@ src/
 - Use `useCallback` for functions passed as props to prevent re-renders
 
 ### Code Style
-- _IMPORTANT_: Run `npm run format` after every big change
 - Use semantic naming: `handleClick`, `isLoading`, `onUpdateSetting`
 - Prefer functional components and hooks over classes
 - Use optional chaining (`?.`) and nullish coalescing (`??`) for safer code
@@ -66,3 +65,6 @@ src/
 3. Build UI components in `src/components/`
 4. Use ShadCN for UI primitives: `npx shadcn@latest add [component]`
 5. Format and lint before committing
+
+## IMPORTANT!!
+- _IMPORTANT_: When planning, add to the task list to use: `npm run format` to meet code standards

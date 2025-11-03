@@ -22,6 +22,7 @@ export default function Home() {
     handleApprove,
     handleReject,
     handleMock,
+    editPart,
   } = useChat();
 
   const handleSend = (content: string) => {
@@ -30,6 +31,10 @@ export default function Home() {
 
   const handleContinue = () => {
     continueWithApprovals(settings);
+  };
+
+  const handleEdit = (partIndex: number, newContent: string | Record<string, unknown>) => {
+    editPart(partIndex, newContent, settings);
   };
 
   return (
@@ -74,6 +79,7 @@ export default function Home() {
             onApprove={handleApprove}
             onReject={handleReject}
             onMock={handleMock}
+            onEdit={handleEdit}
           />
           <ChatInput onSend={handleSend} isLoading={isLoading} onCancel={cancelRequest} />
         </div>

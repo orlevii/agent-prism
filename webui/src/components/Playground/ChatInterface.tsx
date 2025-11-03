@@ -17,6 +17,7 @@ interface ChatInterfaceProps {
   onApprove?: (toolCallId: string) => void;
   onReject?: (toolCallId: string) => void;
   onMock?: (toolCallId: string, mockValue: unknown) => void;
+  onEdit?: (partIndex: number, newContent: string | Record<string, unknown>) => void;
 }
 
 export default function ChatInterface({
@@ -30,6 +31,7 @@ export default function ChatInterface({
   onApprove,
   onReject,
   onMock,
+  onEdit,
 }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +110,7 @@ export default function ChatInterface({
               <PartRenderer
                 key={index}
                 part={item.part}
+                partIndex={index}
                 isStreaming={isLoading && item.isLastMessage}
                 pendingApproval={awaitingApprovals && !!toolStatus}
                 approvalStatus={toolStatus?.status}
@@ -116,6 +119,8 @@ export default function ChatInterface({
                 onMock={
                   toolCallId && onMock ? (mockValue) => onMock(toolCallId, mockValue) : undefined
                 }
+                onEdit={onEdit}
+                isLoading={isLoading}
               />
             );
           })}
