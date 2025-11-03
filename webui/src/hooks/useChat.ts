@@ -14,7 +14,7 @@ export function useChat() {
   const [awaitingApprovals, setAwaitingApprovals] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const apiClientRef = useRef<ReturnType<typeof initializeApiClient> | null>(null);
-  const { processStream } = useStreamingResponse();
+  const { processStream, toolCallsMap, clearToolCallsMap } = useStreamingResponse();
   const {
     pendingTools,
     decisions,
@@ -179,7 +179,8 @@ export function useChat() {
     setError(null);
     setAwaitingApprovals(false);
     clearPendingTools();
-  }, [clearPendingTools]);
+    clearToolCallsMap();
+  }, [clearPendingTools, clearToolCallsMap]);
 
   const cancelRequest = useCallback(() => {
     if (abortControllerRef.current) {
@@ -284,6 +285,7 @@ export function useChat() {
     awaitingApprovals,
     pendingTools,
     allHandled,
+    toolCallsMap,
     sendMessage,
     clearMessages,
     cancelRequest,

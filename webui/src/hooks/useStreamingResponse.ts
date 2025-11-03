@@ -1,7 +1,18 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { StreamEvent } from '../types/agent';
 import type { ModelMessage, TextPart, ThinkingPart } from '../types/message';
 import { updateMessagePart, addMessagePart, hasMessagePart } from '../utils/messageHelpers';
+
+export type ToolCallsMap = Map<
+  string,
+  {
+    tool_call_id: string;
+    tool_name: string;
+    args: Record<string, unknown>;
+    result?: unknown;
+    isExecuting?: boolean;
+  }
+>;
 
 interface ProcessStreamOptions {
   stream: AsyncIterable<StreamEvent>;
@@ -22,6 +33,8 @@ interface ProcessStreamResult {
 }
 
 export function useStreamingResponse() {
+  const toolCallsMapRef = useRef<ToolCallsMap>(new Map());
+
   const processStream = useCallback(
     async ({
       stream,
@@ -34,16 +47,7 @@ export function useStreamingResponse() {
       // Accumulate deltas for real-time UI updates
       let accumulatedContent = '';
       let accumulatedThinking = '';
-      const toolCallsMap = new Map<
-        string,
-        {
-          tool_call_id: string;
-          tool_name: string;
-          args: Record<string, unknown>;
-          result?: unknown;
-          isExecuting?: boolean;
-        }
-      >();
+      const toolCallsMap = toolCallsMapRef.current;
 
       // Event handler functions
       const handleTextDelta = (delta: string) => {
@@ -194,5 +198,9 @@ export function useStreamingResponse() {
     []
   );
 
-  return { processStream };
+  const clearToolCallsMap = useCallback(() => {
+    toolCallsMapRef.current.clear();
+  }, []);
+
+  return { processStream, toolCallsMap: toolCallsMapRef.current, clearToolCallsMap };
 }

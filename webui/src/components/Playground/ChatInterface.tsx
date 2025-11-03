@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import PartRenderer from './PartRenderer';
 import type { ModelMessage, MessagePart } from '@/types/message';
 import type { PendingTool } from '@/hooks/usePendingToolApprovals';
+import type { ToolCallsMap } from '@/hooks/useStreamingResponse';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ArrowRight } from 'lucide-react';
@@ -13,6 +14,7 @@ interface ChatInterfaceProps {
   awaitingApprovals?: boolean;
   pendingTools?: PendingTool[];
   allHandled?: boolean;
+  toolCallsMap?: ToolCallsMap;
   onContinueWithApprovals?: () => void;
   onApprove?: (toolCallId: string) => void;
   onReject?: (toolCallId: string) => void;
@@ -27,6 +29,7 @@ export default function ChatInterface({
   awaitingApprovals,
   pendingTools,
   allHandled,
+  toolCallsMap,
   onContinueWithApprovals,
   onApprove,
   onReject,
@@ -105,6 +108,7 @@ export default function ChatInterface({
               toolCallId = item.part.tool_call_id;
             }
             const toolStatus = toolCallId ? getToolStatus(toolCallId) : undefined;
+            const isExecuting = toolCallId ? toolCallsMap?.get(toolCallId)?.isExecuting : false;
 
             return (
               <PartRenderer
@@ -112,6 +116,7 @@ export default function ChatInterface({
                 part={item.part}
                 partIndex={index}
                 isStreaming={isLoading && item.isLastMessage}
+                isExecuting={isExecuting}
                 pendingApproval={awaitingApprovals && !!toolStatus}
                 approvalStatus={toolStatus?.status}
                 onApprove={toolCallId && onApprove ? () => onApprove(toolCallId) : undefined}
