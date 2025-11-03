@@ -5,6 +5,7 @@ import type { DeferredToolResults } from '../types/agent';
 import { initializeApiClient, makeStreamingChatRequest } from '../utils/apiClient';
 import { useStreamingResponse } from './useStreamingResponse';
 import { usePendingToolApprovals } from './usePendingToolApprovals';
+import { editPartAndTruncate } from '../utils/messageHelpers';
 
 export function useChat() {
   const [messages, setMessages] = useState<ModelMessage[]>([]);
@@ -13,7 +14,7 @@ export function useChat() {
   const [awaitingApprovals, setAwaitingApprovals] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const apiClientRef = useRef<ReturnType<typeof initializeApiClient> | null>(null);
-  const { processStream } = useStreamingResponse();
+  const { processStream, toolCallsMap, clearToolCallsMap } = useStreamingResponse();
   const {
     pendingTools,
     decisions,
@@ -81,7 +82,7 @@ export function useChat() {
           messages: apiMessages,
           dependencies,
           stream: true,
-          use_tools: settings.autoApproveTools ? 'auto' : 'request_approval',
+          use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
           deferred_tool_results: deferredToolResults,
         });
 
@@ -91,6 +92,7 @@ export function useChat() {
           setMessages,
           onToolApprovalRequest: addPendingTool,
           onAwaitingApprovals: () => setAwaitingApprovals(true),
+          onError: setError,
         });
 
         if (result.pendingApproval) {
@@ -140,7 +142,7 @@ export function useChat() {
           messages,
           dependencies,
           stream: true,
-          use_tools: settings.autoApproveTools ? 'auto' : 'request_approval',
+          use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
           deferred_tool_results: decisions,
         });
 
@@ -153,6 +155,7 @@ export function useChat() {
           setMessages,
           onToolApprovalRequest: addPendingTool,
           onAwaitingApprovals: () => setAwaitingApprovals(true),
+          onError: setError,
         });
 
         if (result.pendingApproval) {
@@ -176,7 +179,8 @@ export function useChat() {
     setError(null);
     setAwaitingApprovals(false);
     clearPendingTools();
-  }, [clearPendingTools]);
+    clearToolCallsMap();
+  }, [clearPendingTools, clearToolCallsMap]);
 
   const cancelRequest = useCallback(() => {
     if (abortControllerRef.current) {
@@ -187,13 +191,76 @@ export function useChat() {
     }
   }, []);
 
-  // TODO: Implement editMessage with new structure
-  const editMessage = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (messageId: string, newContent: string, settings: PlaygroundSettings) => {
-      setError('Edit functionality not yet implemented for new message format');
+  const editPart = useCallback(
+    async (
+      partIndex: number,
+      newContent: string | Record<string, unknown>,
+      settings: PlaygroundSettings
+    ) => {
+      if (!settings.agent) {
+        setError('Please select an agent');
+        return;
+      }
+
+      setError(null);
+      setIsLoading(true);
+
+      // Edit the part and truncate all parts after it
+      const truncatedMessages = editPartAndTruncate(messages, partIndex, newContent);
+      setMessages(truncatedMessages);
+
+      // Create assistant message placeholder for the new response
+      const assistantMessage: ModelMessage = {
+        kind: 'response',
+        parts: [],
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      try {
+        const apiClient = initializeApiClient(settings.baseUrl);
+        apiClientRef.current = apiClient;
+
+        let dependencies: Record<string, unknown> = {};
+        try {
+          dependencies = JSON.parse(settings.dependencies || '{}');
+        } catch {
+          // If dependencies are invalid JSON, use empty object
+        }
+
+        const response = makeStreamingChatRequest(apiClient, {
+          agent: settings.agent,
+          messages: truncatedMessages,
+          dependencies,
+          stream: true,
+          use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
+        });
+
+        const result = await processStream({
+          stream: response,
+          abortControllerRef,
+          setMessages,
+          onToolApprovalRequest: addPendingTool,
+          onAwaitingApprovals: () => setAwaitingApprovals(true),
+          onError: setError,
+        });
+
+        if (result.pendingApproval) {
+          // Stream paused waiting for approvals
+          return;
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
+        // Remove the placeholder assistant message on error
+        setMessages((prev) => prev.slice(0, -1));
+      } finally {
+        setIsLoading(false);
+        apiClientRef.current = null;
+        abortControllerRef.current = null;
+      }
     },
-    []
+    [messages, processStream, addPendingTool]
   );
 
   // TODO: Implement submitToolResponses with new structure
@@ -218,6 +285,7 @@ export function useChat() {
     awaitingApprovals,
     pendingTools,
     allHandled,
+    toolCallsMap,
     sendMessage,
     clearMessages,
     cancelRequest,
@@ -225,7 +293,7 @@ export function useChat() {
     handleApprove,
     handleReject,
     handleMock,
-    editMessage,
+    editPart,
     submitToolResponses,
   };
 }

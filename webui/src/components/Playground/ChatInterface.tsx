@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import PartRenderer from './PartRenderer';
 import type { ModelMessage, MessagePart } from '@/types/message';
 import type { PendingTool } from '@/hooks/usePendingToolApprovals';
+import type { ToolCallsMap } from '@/hooks/useStreamingResponse';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ArrowRight } from 'lucide-react';
@@ -13,10 +14,12 @@ interface ChatInterfaceProps {
   awaitingApprovals?: boolean;
   pendingTools?: PendingTool[];
   allHandled?: boolean;
+  toolCallsMap?: ToolCallsMap;
   onContinueWithApprovals?: () => void;
   onApprove?: (toolCallId: string) => void;
   onReject?: (toolCallId: string) => void;
   onMock?: (toolCallId: string, mockValue: unknown) => void;
+  onEdit?: (partIndex: number, newContent: string | Record<string, unknown>) => void;
 }
 
 export default function ChatInterface({
@@ -26,10 +29,12 @@ export default function ChatInterface({
   awaitingApprovals,
   pendingTools,
   allHandled,
+  toolCallsMap,
   onContinueWithApprovals,
   onApprove,
   onReject,
   onMock,
+  onEdit,
 }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -103,12 +108,15 @@ export default function ChatInterface({
               toolCallId = item.part.tool_call_id;
             }
             const toolStatus = toolCallId ? getToolStatus(toolCallId) : undefined;
+            const isExecuting = toolCallId ? toolCallsMap?.get(toolCallId)?.isExecuting : false;
 
             return (
               <PartRenderer
                 key={index}
                 part={item.part}
+                partIndex={index}
                 isStreaming={isLoading && item.isLastMessage}
+                isExecuting={isExecuting}
                 pendingApproval={awaitingApprovals && !!toolStatus}
                 approvalStatus={toolStatus?.status}
                 onApprove={toolCallId && onApprove ? () => onApprove(toolCallId) : undefined}
@@ -116,6 +124,8 @@ export default function ChatInterface({
                 onMock={
                   toolCallId && onMock ? (mockValue) => onMock(toolCallId, mockValue) : undefined
                 }
+                onEdit={onEdit}
+                isLoading={isLoading}
               />
             );
           })}

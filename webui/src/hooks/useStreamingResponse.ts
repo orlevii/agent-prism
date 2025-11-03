@@ -1,6 +1,18 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { StreamEvent } from '../types/agent';
-import type { ModelMessage } from '../types/message';
+import type { ModelMessage, TextPart, ThinkingPart } from '../types/message';
+import { updateMessagePart, addMessagePart, hasMessagePart } from '../utils/messageHelpers';
+
+export type ToolCallsMap = Map<
+  string,
+  {
+    tool_call_id: string;
+    tool_name: string;
+    args: Record<string, unknown>;
+    result?: unknown;
+    isExecuting?: boolean;
+  }
+>;
 
 interface ProcessStreamOptions {
   stream: AsyncIterable<StreamEvent>;
@@ -12,6 +24,7 @@ interface ProcessStreamOptions {
     args: Record<string, unknown>
   ) => void;
   onAwaitingApprovals?: () => void;
+  onError?: (error: string) => void;
 }
 
 interface ProcessStreamResult {
@@ -20,6 +33,8 @@ interface ProcessStreamResult {
 }
 
 export function useStreamingResponse() {
+  const toolCallsMapRef = useRef<ToolCallsMap>(new Map());
+
   const processStream = useCallback(
     async ({
       stream,
@@ -27,184 +42,153 @@ export function useStreamingResponse() {
       setMessages,
       onToolApprovalRequest,
       onAwaitingApprovals,
+      onError,
     }: ProcessStreamOptions): Promise<ProcessStreamResult> => {
       // Accumulate deltas for real-time UI updates
       let accumulatedContent = '';
       let accumulatedThinking = '';
-      const toolCallsMap = new Map<
-        string,
-        {
-          tool_call_id: string;
-          tool_name: string;
-          args: Record<string, unknown>;
-          result?: unknown;
-          isExecuting?: boolean;
-        }
-      >();
+      const toolCallsMap = toolCallsMapRef.current;
 
+      // Event handler functions
+      const handleTextDelta = (delta: string) => {
+        accumulatedContent += delta;
+        setMessages((prev) =>
+          updateMessagePart<TextPart>(prev, 'text', () => ({
+            part_kind: 'text',
+            content: accumulatedContent,
+          }))
+        );
+      };
+
+      const handleThinkingDelta = (delta: string) => {
+        accumulatedThinking += delta;
+        setMessages((prev) =>
+          updateMessagePart<ThinkingPart>(prev, 'thinking', () => ({
+            part_kind: 'thinking',
+            content: accumulatedThinking,
+          }))
+        );
+      };
+
+      const handleToolCallExecuting = (
+        toolCallId: string,
+        toolName: string,
+        args: Record<string, unknown>
+      ) => {
+        toolCallsMap.set(toolCallId, {
+          tool_call_id: toolCallId,
+          tool_name: toolName,
+          args,
+          isExecuting: true,
+        });
+
+        setMessages((prev) => {
+          // Skip if this tool call already exists
+          if (
+            hasMessagePart(
+              prev,
+              (p) => p.part_kind === 'tool-call' && p.tool_call_id === toolCallId
+            )
+          ) {
+            return prev;
+          }
+
+          return addMessagePart(prev, {
+            part_kind: 'tool-call',
+            tool_name: toolName,
+            tool_call_id: toolCallId,
+            args,
+          });
+        });
+      };
+
+      const handleToolResult = (toolCallId: string, result: unknown) => {
+        const existingToolCall = toolCallsMap.get(toolCallId);
+        if (existingToolCall) {
+          toolCallsMap.set(toolCallId, {
+            ...existingToolCall,
+            result,
+            isExecuting: false,
+          });
+        }
+
+        setMessages((prev) =>
+          addMessagePart(prev, {
+            part_kind: 'tool-return',
+            tool_name: existingToolCall?.tool_name || '',
+            content: result,
+            tool_call_id: toolCallId,
+            timestamp: new Date().toISOString(),
+          })
+        );
+      };
+
+      const handleToolApprovalRequest = (
+        toolCallId: string,
+        toolName: string,
+        args: Record<string, unknown>
+      ) => {
+        toolCallsMap.set(toolCallId, {
+          tool_call_id: toolCallId,
+          tool_name: toolName,
+          args,
+          isExecuting: false,
+        });
+        onToolApprovalRequest?.(toolCallId, toolName, args);
+      };
+
+      const handleMessageHistory = (messageHistory: unknown[]) => {
+        try {
+          const modelMessages: ModelMessage[] = messageHistory.map(
+            (msg) => msg as unknown as ModelMessage
+          );
+          setMessages(modelMessages);
+        } catch (err) {
+          console.error('Failed to parse message history:', err);
+        }
+      };
+
+      // Main event processing loop
       for await (const event of stream) {
-        // Check if request was aborted
         if (abortControllerRef.current?.signal.aborted) {
           throw new Error('Request cancelled');
         }
 
-        // Handle different event types
         switch (event.type) {
           case 'text_delta':
-            accumulatedContent += event.delta;
-            // Update the last message with accumulated text
-            setMessages((prev) => {
-              if (prev.length === 0) return prev;
-              const lastMsg = prev[prev.length - 1];
-              if (lastMsg.kind !== 'response') return prev;
-
-              // Find or create text part
-              const parts = [...lastMsg.parts];
-              const textPartIndex = parts.findIndex((p) => p.part_kind === 'text');
-
-              if (textPartIndex >= 0) {
-                parts[textPartIndex] = {
-                  ...parts[textPartIndex],
-                  part_kind: 'text',
-                  content: accumulatedContent,
-                };
-              } else {
-                parts.push({
-                  part_kind: 'text',
-                  content: accumulatedContent,
-                });
-              }
-
-              return [...prev.slice(0, -1), { ...lastMsg, parts }];
-            });
+            handleTextDelta(event.delta);
             break;
 
           case 'thinking_delta':
-            accumulatedThinking += event.delta;
-            // Update the last message with accumulated thinking
-            setMessages((prev) => {
-              if (prev.length === 0) return prev;
-              const lastMsg = prev[prev.length - 1];
-              if (lastMsg.kind !== 'response') return prev;
-
-              const parts = [...lastMsg.parts];
-              const thinkingPartIndex = parts.findIndex((p) => p.part_kind === 'thinking');
-
-              if (thinkingPartIndex >= 0) {
-                parts[thinkingPartIndex] = {
-                  ...parts[thinkingPartIndex],
-                  part_kind: 'thinking',
-                  content: accumulatedThinking,
-                };
-              } else {
-                parts.push({
-                  part_kind: 'thinking',
-                  content: accumulatedThinking,
-                });
-              }
-
-              return [...prev.slice(0, -1), { ...lastMsg, parts }];
-            });
+            handleThinkingDelta(event.delta);
             break;
 
           case 'tool_call_executing':
-            // Track tool call for UI updates
-            toolCallsMap.set(event.tool_call_id, {
-              tool_call_id: event.tool_call_id,
-              tool_name: event.tool_name,
-              args: event.arguments,
-              isExecuting: true,
-            });
-            // Update the last message with tool call
-            setMessages((prev) => {
-              if (prev.length === 0) return prev;
-              const lastMsg = prev[prev.length - 1];
-              if (lastMsg.kind !== 'response') return prev;
-
-              const parts = [...lastMsg.parts];
-              const isDupTool = parts.some(
-                (p) => p.part_kind == 'tool-call' && p.tool_call_id == event.tool_call_id
-              );
-              if (isDupTool) return prev;
-
-              parts.push({
-                part_kind: 'tool-call',
-                tool_name: event.tool_name,
-                tool_call_id: event.tool_call_id,
-                args: event.arguments,
-              });
-
-              return [...prev.slice(0, -1), { ...lastMsg, parts }];
-            });
+            handleToolCallExecuting(event.tool_call_id, event.tool_name, event.arguments);
             break;
 
-          case 'tool_result': {
-            // Update existing tool call with result
-            const existingToolCall = toolCallsMap.get(event.tool_call_id);
-            if (existingToolCall) {
-              toolCallsMap.set(event.tool_call_id, {
-                ...existingToolCall,
-                result: event.result,
-                isExecuting: false,
-              });
-            }
-
-            // Add tool return part to the last message
-            setMessages((prev) => {
-              if (prev.length === 0) return prev;
-              const lastMsg = prev[prev.length - 1];
-              if (lastMsg.kind !== 'response') return prev;
-
-              const parts = [...lastMsg.parts];
-              parts.push({
-                part_kind: 'tool-return',
-                tool_name: existingToolCall?.tool_name || '',
-                content: event.result,
-                tool_call_id: event.tool_call_id,
-                timestamp: new Date().toISOString(),
-              });
-
-              return [...prev.slice(0, -1), { ...lastMsg, parts }];
-            });
+          case 'tool_result':
+            handleToolResult(event.tool_call_id, event.result);
             break;
-          }
 
           case 'tool_approval_request':
-            // Track tool for approval
-            toolCallsMap.set(event.tool_call_id, {
-              tool_call_id: event.tool_call_id,
-              tool_name: event.tool_name,
-              args: event.arguments,
-              isExecuting: false,
-            });
-
-            // Notify parent component
-            onToolApprovalRequest?.(event.tool_call_id, event.tool_name, event.arguments);
+            handleToolApprovalRequest(event.tool_call_id, event.tool_name, event.arguments);
             break;
 
           case 'message_history':
-            // Replace entire message history with authoritative backend data
-            try {
-              const modelMessages: ModelMessage[] = event.message_history.map(
-                (msg) => msg as unknown as ModelMessage
-              );
-              setMessages(modelMessages);
-            } catch (err) {
-              console.error('Failed to parse message history:', err);
-            }
+            handleMessageHistory(event.message_history);
             break;
 
           case 'error':
             console.error('Stream error:', event.error);
+            onError?.(event.error);
             break;
 
           case 'done':
             if (event.status === 'pending_approval') {
-              // Notify parent that we're waiting for approvals
               onAwaitingApprovals?.();
               return { completed: false, pendingApproval: true };
             }
-            // Stream completed normally
             break;
         }
       }
@@ -214,5 +198,9 @@ export function useStreamingResponse() {
     []
   );
 
-  return { processStream };
+  const clearToolCallsMap = useCallback(() => {
+    toolCallsMapRef.current.clear();
+  }, []);
+
+  return { processStream, toolCallsMap: toolCallsMapRef.current, clearToolCallsMap };
 }

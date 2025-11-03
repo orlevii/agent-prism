@@ -42,7 +42,6 @@ src/
 - Use `useCallback` for functions passed as props to prevent re-renders
 
 ### Code Style
-- Run `npm run format` before committing (Prettier + ESLint)
 - Use semantic naming: `handleClick`, `isLoading`, `onUpdateSetting`
 - Prefer functional components and hooks over classes
 - Use optional chaining (`?.`) and nullish coalescing (`??`) for safer code
@@ -59,15 +58,6 @@ src/
 - Use TypeScript interfaces for API request/response shapes
 - Always validate and sanitize external data
 
-## Common Commands
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run format       # Format code with Prettier + fix lint issues
-npm run lint         # Check for linting errors
-```
-
 ## Adding New Features
 
 1. Define types in `src/types/`
@@ -75,3 +65,6 @@ npm run lint         # Check for linting errors
 3. Build UI components in `src/components/`
 4. Use ShadCN for UI primitives: `npx shadcn@latest add [component]`
 5. Format and lint before committing
+
+## IMPORTANT!!
+- _IMPORTANT_: When planning, add to the task list to use: `npm run format` to meet code standards

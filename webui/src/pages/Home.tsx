@@ -15,6 +15,7 @@ export default function Home() {
     awaitingApprovals,
     pendingTools,
     allHandled,
+    toolCallsMap,
     sendMessage,
     clearMessages,
     cancelRequest,
@@ -22,6 +23,7 @@ export default function Home() {
     handleApprove,
     handleReject,
     handleMock,
+    editPart,
   } = useChat();
 
   const handleSend = (content: string) => {
@@ -30,6 +32,10 @@ export default function Home() {
 
   const handleContinue = () => {
     continueWithApprovals(settings);
+  };
+
+  const handleEdit = (partIndex: number, newContent: string | Record<string, unknown>) => {
+    editPart(partIndex, newContent, settings);
   };
 
   return (
@@ -70,10 +76,12 @@ export default function Home() {
             awaitingApprovals={awaitingApprovals}
             pendingTools={pendingTools}
             allHandled={allHandled}
+            toolCallsMap={toolCallsMap}
             onContinueWithApprovals={handleContinue}
             onApprove={handleApprove}
             onReject={handleReject}
             onMock={handleMock}
+            onEdit={handleEdit}
           />
           <ChatInput onSend={handleSend} isLoading={isLoading} onCancel={cancelRequest} />
         </div>

@@ -67,18 +67,18 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
           onAgentDataChange={setSelectedAgentData}
         />
 
-        {/* Auto Approve Tools */}
+        {/* Force Human Approval */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="auto-approve-tools">Auto Approve Tools</Label>
+            <Label htmlFor="force-human-approval">Force Human Approval</Label>
             <Switch
-              id="auto-approve-tools"
-              checked={settings.autoApproveTools}
-              onCheckedChange={(checked) => onUpdateSetting('autoApproveTools', checked)}
+              id="force-human-approval"
+              checked={settings.forceHumanApproval}
+              onCheckedChange={(checked) => onUpdateSetting('forceHumanApproval', checked)}
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            When disabled, you'll need to manually approve each tool call before execution
+            When enabled, you'll need to manually approve each tool call before execution
           </p>
         </div>
 

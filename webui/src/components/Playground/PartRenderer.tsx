@@ -8,6 +8,7 @@ import ThinkingPart from './parts/ThinkingPart';
 
 interface PartRendererProps {
   part: MessagePart;
+  partIndex: number;
   isStreaming?: boolean;
   isExecuting?: boolean;
   pendingApproval?: boolean;
@@ -15,10 +16,13 @@ interface PartRendererProps {
   onApprove?: () => void;
   onReject?: () => void;
   onMock?: (mockValue: unknown) => void;
+  onEdit?: (partIndex: number, newContent: string | Record<string, unknown>) => void;
+  isLoading?: boolean;
 }
 
 export default function PartRenderer({
   part,
+  partIndex,
   isStreaming,
   isExecuting,
   pendingApproval,
@@ -26,13 +30,17 @@ export default function PartRenderer({
   onApprove,
   onReject,
   onMock,
+  onEdit,
+  isLoading,
 }: PartRendererProps) {
   switch (part.part_kind) {
     case 'system-prompt':
       return <SystemPromptPart part={part} />;
 
     case 'user-prompt':
-      return <UserPromptPart part={part} />;
+      return (
+        <UserPromptPart part={part} partIndex={partIndex} onEdit={onEdit} isLoading={isLoading} />
+      );
 
     case 'text':
       return <TextPart part={part} isStreaming={isStreaming} />;
@@ -51,7 +59,9 @@ export default function PartRenderer({
       );
 
     case 'tool-return':
-      return <ToolReturnPart part={part} />;
+      return (
+        <ToolReturnPart part={part} partIndex={partIndex} onEdit={onEdit} isLoading={isLoading} />
+      );
 
     case 'thinking':
       return <ThinkingPart part={part} isStreaming={isStreaming} />;
