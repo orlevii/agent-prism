@@ -31,11 +31,18 @@ export interface ApiMessage {
   tool_name?: string;
 }
 
+export interface DeferredToolResults {
+  calls: Record<string, unknown>;
+  approvals: Record<string, boolean>;
+}
+
 export interface ChatRequest {
   agent: string;
   messages: ModelMessage[];
   dependencies?: Record<string, unknown>;
   stream?: boolean;
+  use_tools?: 'auto' | 'request_approval';
+  deferred_tool_results?: DeferredToolResults;
 }
 
 // Stream event types matching backend
@@ -64,6 +71,13 @@ export interface ToolResultEvent {
   result: unknown;
 }
 
+export interface ToolApprovalRequestEvent {
+  type: 'tool_approval_request';
+  tool_call_id: string;
+  tool_name: string;
+  arguments: Record<string, unknown>;
+}
+
 export interface ErrorEvent {
   type: 'error';
   error: string;
@@ -84,6 +98,7 @@ export type StreamEvent =
   | ThinkingDeltaEvent
   | ToolCallExecutingEvent
   | ToolResultEvent
+  | ToolApprovalRequestEvent
   | ErrorEvent
   | MessageHistoryEvent
   | DoneEvent;

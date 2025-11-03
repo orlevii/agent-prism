@@ -6,10 +6,17 @@ interface ProcessStreamOptions {
   stream: AsyncIterable<StreamEvent>;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
   setMessages: React.Dispatch<React.SetStateAction<ModelMessage[]>>;
+  onToolApprovalRequest?: (
+    toolCallId: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ) => void;
+  onAwaitingApprovals?: () => void;
 }
 
 interface ProcessStreamResult {
   completed: boolean;
+  pendingApproval?: boolean;
 }
 
 export function useStreamingResponse() {
@@ -18,6 +25,8 @@ export function useStreamingResponse() {
       stream,
       abortControllerRef,
       setMessages,
+      onToolApprovalRequest,
+      onAwaitingApprovals,
     }: ProcessStreamOptions): Promise<ProcessStreamResult> => {
       // Accumulate deltas for real-time UI updates
       let accumulatedContent = '';
@@ -113,6 +122,11 @@ export function useStreamingResponse() {
               if (lastMsg.kind !== 'response') return prev;
 
               const parts = [...lastMsg.parts];
+              const isDupTool = parts.some(
+                (p) => p.part_kind == 'tool-call' && p.tool_call_id == event.tool_call_id
+              );
+              if (isDupTool) return prev;
+
               parts.push({
                 part_kind: 'tool-call',
                 tool_name: event.tool_name,
@@ -155,6 +169,19 @@ export function useStreamingResponse() {
             break;
           }
 
+          case 'tool_approval_request':
+            // Track tool for approval
+            toolCallsMap.set(event.tool_call_id, {
+              tool_call_id: event.tool_call_id,
+              tool_name: event.tool_name,
+              args: event.arguments,
+              isExecuting: false,
+            });
+
+            // Notify parent component
+            onToolApprovalRequest?.(event.tool_call_id, event.tool_name, event.arguments);
+            break;
+
           case 'message_history':
             // Replace entire message history with authoritative backend data
             try {
@@ -172,12 +199,17 @@ export function useStreamingResponse() {
             break;
 
           case 'done':
-            // Stream completed
+            if (event.status === 'pending_approval') {
+              // Notify parent that we're waiting for approvals
+              onAwaitingApprovals?.();
+              return { completed: false, pendingApproval: true };
+            }
+            // Stream completed normally
             break;
         }
       }
 
-      return { completed: true };
+      return { completed: true, pendingApproval: false };
     },
     []
   );

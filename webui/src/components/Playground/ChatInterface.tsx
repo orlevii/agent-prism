@@ -1,16 +1,36 @@
 import { useEffect, useRef } from 'react';
 import PartRenderer from './PartRenderer';
 import type { ModelMessage, MessagePart } from '@/types/message';
+import type { PendingTool } from '@/hooks/usePendingToolApprovals';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, ArrowRight } from 'lucide-react';
 
 interface ChatInterfaceProps {
   messages: ModelMessage[];
   error: string | null;
   isLoading?: boolean;
+  awaitingApprovals?: boolean;
+  pendingTools?: PendingTool[];
+  allHandled?: boolean;
+  onContinueWithApprovals?: () => void;
+  onApprove?: (toolCallId: string) => void;
+  onReject?: (toolCallId: string) => void;
+  onMock?: (toolCallId: string, mockValue: unknown) => void;
 }
 
-export default function ChatInterface({ messages, error, isLoading }: ChatInterfaceProps) {
+export default function ChatInterface({
+  messages,
+  error,
+  isLoading,
+  awaitingApprovals,
+  pendingTools,
+  allHandled,
+  onContinueWithApprovals,
+  onApprove,
+  onReject,
+  onMock,
+}: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Flatten all parts from all messages
@@ -30,6 +50,11 @@ export default function ChatInterface({ messages, error, isLoading }: ChatInterf
       });
     });
   });
+
+  // Helper to get tool approval status
+  const getToolStatus = (toolCallId: string) => {
+    return pendingTools?.find((t) => t.tool_call_id === toolCallId);
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -72,13 +97,46 @@ export default function ChatInterface({ messages, error, isLoading }: ChatInterf
         </div>
       ) : (
         <div className="max-w-4xl mx-auto">
-          {allParts.map((item, index) => (
-            <PartRenderer
-              key={index}
-              part={item.part}
-              isStreaming={isLoading && item.isLastMessage}
-            />
-          ))}
+          {allParts.map((item, index) => {
+            let toolCallId: string | undefined;
+            if (item.part.part_kind === 'tool-call') {
+              toolCallId = item.part.tool_call_id;
+            }
+            const toolStatus = toolCallId ? getToolStatus(toolCallId) : undefined;
+
+            return (
+              <PartRenderer
+                key={index}
+                part={item.part}
+                isStreaming={isLoading && item.isLastMessage}
+                pendingApproval={awaitingApprovals && !!toolStatus}
+                approvalStatus={toolStatus?.status}
+                onApprove={toolCallId && onApprove ? () => onApprove(toolCallId) : undefined}
+                onReject={toolCallId && onReject ? () => onReject(toolCallId) : undefined}
+                onMock={
+                  toolCallId && onMock ? (mockValue) => onMock(toolCallId, mockValue) : undefined
+                }
+              />
+            );
+          })}
+
+          {/* Continue Button for Approvals */}
+          {awaitingApprovals && (
+            <div className="flex justify-center mb-6">
+              <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4 max-w-md">
+                <p className="text-sm text-muted-foreground mb-3 text-center">
+                  {allHandled
+                    ? 'All tool calls have been handled. Click Continue to proceed.'
+                    : 'Please approve, reject, or mock all pending tool calls.'}
+                </p>
+                <Button className="w-full" disabled={!allHandled} onClick={onContinueWithApprovals}>
+                  Continue
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <Alert
               variant="destructive"
