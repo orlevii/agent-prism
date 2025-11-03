@@ -36,7 +36,7 @@ export interface PlaygroundSettings {
   baseUrl: string;
   agent: string;
   dependencies: string; // JSON string
-  autoApproveTools: boolean;
+  forceHumanApproval: boolean;
 }
 
 export interface Tool {

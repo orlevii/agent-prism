@@ -5,7 +5,7 @@ const DEFAULT_SETTINGS: PlaygroundSettings = {
   baseUrl: window.location.origin,
   agent: '',
   dependencies: '{}',
-  autoApproveTools: true,
+  forceHumanApproval: false,
 };
 
 export function useSettings() {

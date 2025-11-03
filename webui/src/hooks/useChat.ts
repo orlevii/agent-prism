@@ -82,7 +82,7 @@ export function useChat() {
           messages: apiMessages,
           dependencies,
           stream: true,
-          use_tools: settings.autoApproveTools ? 'auto' : 'request_approval',
+          use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
           deferred_tool_results: deferredToolResults,
         });
 
@@ -142,7 +142,7 @@ export function useChat() {
           messages,
           dependencies,
           stream: true,
-          use_tools: settings.autoApproveTools ? 'auto' : 'request_approval',
+          use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
           deferred_tool_results: decisions,
         });
 
@@ -232,7 +232,7 @@ export function useChat() {
           messages: truncatedMessages,
           dependencies,
           stream: true,
-          use_tools: settings.autoApproveTools ? 'auto' : 'request_approval',
+          use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
         });
 
         const result = await processStream({
