@@ -12,6 +12,7 @@ interface ProcessStreamOptions {
     args: Record<string, unknown>
   ) => void;
   onAwaitingApprovals?: () => void;
+  onError?: (error: string) => void;
 }
 
 interface ProcessStreamResult {
@@ -27,6 +28,7 @@ export function useStreamingResponse() {
       setMessages,
       onToolApprovalRequest,
       onAwaitingApprovals,
+      onError,
     }: ProcessStreamOptions): Promise<ProcessStreamResult> => {
       // Accumulate deltas for real-time UI updates
       let accumulatedContent = '';
@@ -196,6 +198,7 @@ export function useStreamingResponse() {
 
           case 'error':
             console.error('Stream error:', event.error);
+            onError?.(event.error);
             break;
 
           case 'done':

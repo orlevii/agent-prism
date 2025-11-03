@@ -91,6 +91,7 @@ export function useChat() {
           setMessages,
           onToolApprovalRequest: addPendingTool,
           onAwaitingApprovals: () => setAwaitingApprovals(true),
+          onError: setError,
         });
 
         if (result.pendingApproval) {
@@ -153,6 +154,7 @@ export function useChat() {
           setMessages,
           onToolApprovalRequest: addPendingTool,
           onAwaitingApprovals: () => setAwaitingApprovals(true),
+          onError: setError,
         });
 
         if (result.pendingApproval) {

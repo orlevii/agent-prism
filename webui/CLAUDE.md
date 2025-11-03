@@ -42,7 +42,7 @@ src/
 - Use `useCallback` for functions passed as props to prevent re-renders
 
 ### Code Style
-- Run `npm run format` before committing (Prettier + ESLint)
+- _IMPORTANT_: Run `npm run format` after every big change
 - Use semantic naming: `handleClick`, `isLoading`, `onUpdateSetting`
 - Prefer functional components and hooks over classes
 - Use optional chaining (`?.`) and nullish coalescing (`??`) for safer code
@@ -58,15 +58,6 @@ src/
 - Handle loading, error, and success states explicitly
 - Use TypeScript interfaces for API request/response shapes
 - Always validate and sanitize external data
-
-## Common Commands
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run format       # Format code with Prettier + fix lint issues
-npm run lint         # Check for linting errors
-```
 
 ## Adding New Features
 
