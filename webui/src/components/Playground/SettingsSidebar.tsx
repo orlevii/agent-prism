@@ -5,6 +5,7 @@ import type { Agent } from '../../types/agent';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -65,6 +66,21 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
           onAgentChange={(agent) => onUpdateSetting('agent', agent)}
           onAgentDataChange={setSelectedAgentData}
         />
+
+        {/* Auto Approve Tools */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="auto-approve-tools">Auto Approve Tools</Label>
+            <Switch
+              id="auto-approve-tools"
+              checked={settings.autoApproveTools}
+              onCheckedChange={(checked) => onUpdateSetting('autoApproveTools', checked)}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            When disabled, you'll need to manually approve each tool call before execution
+          </p>
+        </div>
 
         {/* Dependency Selector */}
         {selectedAgentData && selectedAgentData.dependencies.length > 0 && (

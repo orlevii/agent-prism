@@ -27,6 +27,13 @@ class ToolResultEvent(BaseModel):
     result: Any
 
 
+class ToolApprovalRequestEvent(BaseModel):
+    type: Literal["tool_approval_request"] = "tool_approval_request"
+    tool_call_id: str
+    tool_name: str
+    arguments: dict[str, Any]
+
+
 class ErrorEvent(BaseModel):
     type: Literal["error"] = "error"
     error: str
@@ -47,10 +54,16 @@ StreamEventType = (
     | ThinkingDeltaEvent
     | ToolCallExecutingEvent
     | ToolResultEvent
+    | ToolApprovalRequestEvent
     | ErrorEvent
     | MessageHistoryEvent
     | DoneEvent
 )
+
+
+class DeferredToolResults(BaseModel):
+    calls: dict[str, Any] = {}
+    approvals: dict[str, bool] = {}
 
 
 class ApprovalToolset(WrapperToolset):

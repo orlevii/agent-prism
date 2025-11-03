@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from pydantic_ai import (
     AgentRunResultEvent,
     ApprovalRequired,
+    DeferredToolRequests,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     FunctionToolset,
@@ -18,7 +19,9 @@ from pydantic_ai import (
     RunContext,
     TextPartDelta,
     ThinkingPartDelta,
+    Tool,
 )
+from pydantic_ai import DeferredToolResults as PydanticDeferredToolResults
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
@@ -29,12 +32,14 @@ from pydantic_ai.tools import ToolFuncEither
 
 from .agents import agent_loader
 from .types import (
+    DeferredToolResults,
     DoneEvent,
     ErrorEvent,
     MessageHistoryEvent,
     StreamEventType,
     TextDeltaEvent,
     ThinkingDeltaEvent,
+    ToolApprovalRequestEvent,
     ToolCallExecutingEvent,
     ToolResultEvent,
 )
@@ -74,6 +79,7 @@ class ChatRequest(BaseModel):
     messages: list[dict[str, Any]]
     dependencies: dict[str, Any] = {}
     use_tools: Literal["auto", "request_approval"] = "auto"
+    deferred_tool_results: DeferredToolResults | None = None
 
 
 def build_message_history(
@@ -101,11 +107,24 @@ def build_message_history(
     return messages
 
 
-def _wrap_for_approval(fn: Callable[..., Any]) -> ToolFuncEither:
+def _tool_for_approval(tool: Tool[Any]) -> Tool[Any]:
+    new_tool = replace(tool)
+    new_tool.function_schema = replace(new_tool.function_schema)
+    new_tool.function = _wrap_for_approval(new_tool.function, new_tool.takes_ctx)
+    new_tool.function_schema.function = new_tool.function
+    new_tool.takes_ctx = True
+    new_tool.function_schema.takes_ctx = True
+
+    return new_tool
+
+
+def _wrap_for_approval(fn: Callable[..., Any], takes_ctx: bool) -> ToolFuncEither:
     def decorator(ctx: RunContext[Any], **kwargs: Any) -> Any:
         if not ctx.tool_call_approved:
             raise ApprovalRequired
-        return fn(ctx, **kwargs)
+        if takes_ctx:
+            return fn(ctx, **kwargs)
+        return fn(**kwargs)
 
     return decorator
 
@@ -116,21 +135,34 @@ async def stream_agent_events(
     message_history: list[ModelMessage],
     dependencies: dict[str, Any],
     use_tools: Literal["auto", "request_approval"],
+    deferred_tool_results: DeferredToolResults | None = None,
 ) -> AsyncIterator[StreamEventType]:
     agent = agent_loader.get_agent_by_name(agent_name)
     toolsets = agent.toolsets
     if use_tools == "request_approval":
         toolsets = []
-        for ts in toolsets:
+        for ts in agent.toolsets:
             assert isinstance(ts, FunctionToolset)
             new_ts = FunctionToolset()
             for tool in ts.tools.values():
-                new_tool = replace(tool)
-                new_tool.function_schema = replace(tool.function_schema)
-                new_tool.function = _wrap_for_approval(tool.function)
-                new_tool.function_schema.function = new_tool.function
+                new_tool = _tool_for_approval(tool)
+
                 new_ts.add_tool(new_tool)
             toolsets.append(new_ts)
+
+    # Convert deferred tool results if provided
+    pydantic_deferred_results: PydanticDeferredToolResults | None = None
+    if deferred_tool_results:
+        pydantic_deferred_results = PydanticDeferredToolResults()
+        for tool_id, approved in deferred_tool_results.approvals.items():
+            if tool_id in deferred_tool_results.calls:
+                # Mock: provide the mock value
+                pydantic_deferred_results.approvals[tool_id] = (
+                    deferred_tool_results.calls[tool_id]
+                )
+            else:
+                # Approve/Reject: use boolean
+                pydantic_deferred_results.approvals[tool_id] = approved
 
     with agent.override(tools=[], toolsets=toolsets):
         try:
@@ -138,6 +170,7 @@ async def stream_agent_events(
                 user_prompt,
                 message_history=message_history,
                 deps=agent.deps_type(**dependencies),
+                deferred_tool_results=pydantic_deferred_results,
             ):
                 if isinstance(event, PartStartEvent):
                     if isinstance(event.part, TextPart):
@@ -162,7 +195,18 @@ async def stream_agent_events(
                     yield MessageHistoryEvent(
                         message_history=[asdict(m) for m in event.result.all_messages()]
                     )
-                    yield DoneEvent(status="complete")
+                    agent_output = event.result.output
+                    if isinstance(agent_output, DeferredToolRequests):
+                        # Yield approval request for each deferred tool
+                        for tool_call in agent_output.approvals:
+                            yield ToolApprovalRequestEvent(
+                                tool_call_id=tool_call.tool_call_id,
+                                tool_name=tool_call.tool_name,
+                                arguments=tool_call.args_as_dict(),
+                            )
+                        yield DoneEvent(status="pending_approval")
+                    else:
+                        yield DoneEvent(status="complete")
         except Exception as e:
             yield ErrorEvent(error=str(e))
             yield DoneEvent(status="complete")
@@ -194,6 +238,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
             message_history=message_history,
             dependencies=req.dependencies,
             use_tools=req.use_tools,
+            deferred_tool_results=req.deferred_tool_results,
         ):
             yield f"{event.model_dump_json()}\n".encode()
 

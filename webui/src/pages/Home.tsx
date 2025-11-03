@@ -8,10 +8,28 @@ import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const { settings, updateSetting } = useSettings();
-  const { messages, isLoading, error, sendMessage, clearMessages, cancelRequest } = useChat();
+  const {
+    messages,
+    isLoading,
+    error,
+    awaitingApprovals,
+    pendingTools,
+    allHandled,
+    sendMessage,
+    clearMessages,
+    cancelRequest,
+    continueWithApprovals,
+    handleApprove,
+    handleReject,
+    handleMock,
+  } = useChat();
 
   const handleSend = (content: string) => {
     sendMessage(content, settings);
+  };
+
+  const handleContinue = () => {
+    continueWithApprovals(settings);
   };
 
   return (
@@ -45,7 +63,18 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          <ChatInterface messages={messages} error={error} isLoading={isLoading} />
+          <ChatInterface
+            messages={messages}
+            error={error}
+            isLoading={isLoading}
+            awaitingApprovals={awaitingApprovals}
+            pendingTools={pendingTools}
+            allHandled={allHandled}
+            onContinueWithApprovals={handleContinue}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onMock={handleMock}
+          />
           <ChatInput onSend={handleSend} isLoading={isLoading} onCancel={cancelRequest} />
         </div>
 
