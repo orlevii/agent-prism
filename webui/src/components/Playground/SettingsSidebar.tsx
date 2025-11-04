@@ -10,6 +10,14 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -31,6 +39,8 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
   const [selectedScenario, setSelectedScenario] = useState<string>('');
   const [editorMode, setEditorMode] = useState<'json' | 'form'>('json');
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [draftSettings, setDraftSettings] = useState<string>('');
 
   const handleScenarioSelect = (scenarioName: string) => {
     setSelectedScenario(scenarioName);
@@ -62,6 +72,31 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
       setJsonError(null);
       setEditorMode('json');
     }
+  };
+
+  const handleOpenFormModal = () => {
+    // Validate JSON before opening modal
+    try {
+      const trimmed = settings.settings.trim();
+      if (trimmed) {
+        JSON.parse(trimmed);
+      }
+      setJsonError(null);
+      setDraftSettings(settings.settings);
+      setIsFormModalOpen(true);
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
+    }
+  };
+
+  const handleSaveFormModal = () => {
+    onUpdateSetting('settings', draftSettings);
+    setIsFormModalOpen(false);
+  };
+
+  const handleCancelFormModal = () => {
+    setDraftSettings('');
+    setIsFormModalOpen(false);
   };
 
   return (
@@ -134,19 +169,31 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="settings">Agent Settings</Label>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleModeToggle}
-              className="h-8 w-8"
-              title={editorMode === 'json' ? 'Switch to form editor' : 'Switch to JSON editor'}
-            >
-              {editorMode === 'json' ? (
-                <FormInput className="h-4 w-4" />
-              ) : (
-                <Code className="h-4 w-4" />
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleOpenFormModal}
+                className="h-8 px-3 text-xs"
+                title="Open form editor in modal"
+              >
+                <FormInput className="h-3.5 w-3.5 mr-1.5" />
+                Open Form Editor
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleModeToggle}
+                className="h-8 w-8"
+                title={editorMode === 'json' ? 'Switch to form editor' : 'Switch to JSON editor'}
+              >
+                {editorMode === 'json' ? (
+                  <FormInput className="h-4 w-4" />
+                ) : (
+                  <Code className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {jsonError && (
@@ -167,7 +214,7 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
                 }}
                 placeholder="{}"
                 rows={8}
-                className="font-mono text-sm"
+                className="font-mono text-sm max-h-96 overflow-y-auto"
               />
               <p className="text-xs text-muted-foreground">
                 JSON object with agent-specific configuration
@@ -184,6 +231,27 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
           )}
         </div>
       </div>
+
+      {/* Form Editor Modal */}
+      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Settings</DialogTitle>
+            <DialogDescription>
+              Modify agent settings using form fields. Changes will be applied when you click Save.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <SettingsFormEditor value={draftSettings} onChange={setDraftSettings} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelFormModal}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveFormModal}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

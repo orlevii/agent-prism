@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -97,11 +98,12 @@ export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps)
               <Label htmlFor={`field-${key}`} className="text-sm font-medium">
                 {key}
               </Label>
-              <Input
+              <Textarea
                 id={`field-${key}`}
-                type="text"
                 value={value as string}
                 onChange={(e) => handleFieldChange(key, e.target.value)}
+                rows={3}
+                className="resize-y font-mono text-sm"
               />
             </div>
           );
