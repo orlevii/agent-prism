@@ -1,11 +1,22 @@
 import { useState } from 'react';
 import AgentSelector from './AgentSelector';
+import { SettingsFormEditor } from './SettingsFormEditor';
 import type { PlaygroundSettings } from '../../types/playground';
 import type { Agent } from '../../types/agent';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -13,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { FormInput, AlertCircle } from 'lucide-react';
 
 interface SettingsSidebarProps {
   settings: PlaygroundSettings;
@@ -24,18 +36,46 @@ interface SettingsSidebarProps {
 
 export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsSidebarProps) {
   const [selectedAgentData, setSelectedAgentData] = useState<Agent | null>(null);
-  const [selectedDependency, setSelectedDependency] = useState<string>('');
+  const [selectedScenario, setSelectedScenario] = useState<string>('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [draftSettings, setDraftSettings] = useState<string>('');
 
-  const handleDependencySelect = (dependencyName: string) => {
-    setSelectedDependency(dependencyName);
+  const handleScenarioSelect = (scenarioName: string) => {
+    setSelectedScenario(scenarioName);
 
     if (selectedAgentData) {
-      const dependency = selectedAgentData.dependencies.find((dep) => dep.name === dependencyName);
-      if (dependency && dependency.data) {
-        const jsonStr = JSON.stringify(dependency.data, null, 2);
-        onUpdateSetting('dependencies', jsonStr);
+      const scenario = selectedAgentData.settings.find((s) => s.name === scenarioName);
+      if (scenario && scenario.data) {
+        const jsonStr = JSON.stringify(scenario.data, null, 2);
+        onUpdateSetting('settings', jsonStr);
       }
     }
+  };
+
+  const handleOpenFormModal = () => {
+    // Validate JSON before opening modal
+    try {
+      const trimmed = settings.settings.trim();
+      if (trimmed) {
+        JSON.parse(trimmed);
+      }
+      setJsonError(null);
+      setDraftSettings(settings.settings);
+      setIsFormModalOpen(true);
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
+    }
+  };
+
+  const handleSaveFormModal = () => {
+    onUpdateSetting('settings', draftSettings);
+    setIsFormModalOpen(false);
+  };
+
+  const handleCancelFormModal = () => {
+    setDraftSettings('');
+    setIsFormModalOpen(false);
   };
 
   return (
@@ -82,44 +122,88 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
           </p>
         </div>
 
-        {/* Dependency Selector */}
-        {selectedAgentData && selectedAgentData.dependencies.length > 0 && (
+        {/* Scenario Selector */}
+        {selectedAgentData && selectedAgentData.settings.length > 0 && (
           <div className="space-y-2">
-            <Label htmlFor="dependency-select">Select Dependency</Label>
-            <Select value={selectedDependency} onValueChange={handleDependencySelect}>
-              <SelectTrigger id="dependency-select">
-                <SelectValue placeholder="Choose a dependency..." />
+            <Label htmlFor="scenario-select">Select Scenario</Label>
+            <Select value={selectedScenario} onValueChange={handleScenarioSelect}>
+              <SelectTrigger id="scenario-select">
+                <SelectValue placeholder="Choose a scenario..." />
               </SelectTrigger>
               <SelectContent>
-                {selectedAgentData.dependencies.map((dep) => (
-                  <SelectItem key={dep.name} value={dep.name}>
-                    {dep.name}
+                {selectedAgentData.settings.map((scenario) => (
+                  <SelectItem key={scenario.name} value={scenario.name}>
+                    {scenario.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Select a dependency to auto-fill the JSON below
+              Select a scenario to auto-fill the JSON below
             </p>
           </div>
         )}
 
-        {/* Dependencies */}
+        {/* Settings */}
         <div className="space-y-2">
-          <Label htmlFor="dependencies">Agent Dependencies</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="settings">Agent Settings</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenFormModal}
+              className="h-8 px-3 text-xs"
+              title="Open form editor in modal"
+            >
+              <FormInput className="h-3.5 w-3.5 mr-1.5" />
+              Open Form Editor
+            </Button>
+          </div>
+
+          {jsonError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Invalid JSON: {jsonError}</AlertDescription>
+            </Alert>
+          )}
+
           <Textarea
-            id="dependencies"
-            value={settings.dependencies}
-            onChange={(e) => onUpdateSetting('dependencies', e.target.value)}
+            id="settings"
+            value={settings.settings}
+            onChange={(e) => {
+              onUpdateSetting('settings', e.target.value);
+              setJsonError(null); // Clear error on edit
+            }}
             placeholder="{}"
             rows={8}
-            className="font-mono text-sm"
+            className="font-mono text-sm max-h-96 overflow-y-auto"
           />
           <p className="text-xs text-muted-foreground">
             JSON object with agent-specific configuration
           </p>
         </div>
       </div>
+
+      {/* Form Editor Modal */}
+      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Settings</DialogTitle>
+            <DialogDescription>
+              Modify agent settings using form fields. Changes will be applied when you click Save.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <SettingsFormEditor value={draftSettings} onChange={setDraftSettings} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelFormModal}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveFormModal}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,36 +1,63 @@
 import inspect
-from typing import Any, Generic, TypedDict, TypeVar
+from typing import Any, Callable, cast, overload
 
 from pydantic_ai import Agent
 
-from .agents import agent_loader
+from agent_playbook.export_types import (
+    ExportedAgent,
+    GenericExportedAgent,
+    Scenario,
+    TDeps,
+    TResp,
+    TSettings,
+)
 
-TDeps = TypeVar("TDeps")
-TResp = TypeVar("TResp")
+from .agent_loader import agent_loader
 
 
-class Scenario(TypedDict, Generic[TDeps]):
-    name: str
-    dependency: TDeps
+def _identity(settings: Any) -> Any:
+    return settings
+
+
+@overload
+def export(
+    *,
+    agent: Agent[TSettings, TResp],
+    scenarios: list[Scenario[TSettings]],
+    agent_name: str | None = None,
+) -> None:
+    pass
+
+
+@overload
+def export(
+    *,
+    agent: Agent[TDeps, TResp],
+    scenarios: list[Scenario[TSettings]],
+    agent_name: str | None = None,
+    init_dependencies_fn: Callable[[TSettings], TDeps],
+) -> None:
+    pass
 
 
 def export(
+    *,
     agent: Agent[TDeps, TResp],
-    scenarios: list[Scenario[TDeps]],
+    scenarios: list[Scenario[TSettings]],
     agent_name: str | None = None,
+    init_dependencies_fn: Callable[[TSettings], TDeps] = _identity,
 ) -> None:
     name = agent_name or agent.name or _get_fallback_agent_name()
 
-    dependency_data: dict[str, dict[str, Any]] = {}
-    for dep in scenarios:
-        dep_obj = dep["dependency"]
-        if hasattr(dep_obj, "model_dump"):
-            dependency_data[dep["name"]] = dep_obj.model_dump()
-        else:
-            dependency_data[dep["name"]] = {}
+    exported_agent = ExportedAgent(
+        agent=agent,
+        scenarios=scenarios,
+        agent_name=name,
+        init_dependencies_fn=init_dependencies_fn,
+    )
 
     agent_loader.register_agent(
-        agent_name=name, agent=agent, module_name="", dependency_data=dependency_data
+        exported_agent=cast("GenericExportedAgent", exported_agent)
     )
 
 
@@ -39,6 +66,6 @@ def _get_fallback_agent_name() -> str:
         if frame.filename.lower().endswith("__scenarios.py"):
             caller_module = inspect.getmodule(frame[0])
             module_name = getattr(caller_module, "__name__", "unknown_module")
-            _, _, moduel_name = module_name.rpartition(".")
-            return moduel_name.removesuffix("__scenarios")
-    return "Unkown Agent"
+            _, _, module_part = module_name.rpartition(".")
+            return module_part.removesuffix("__scenarios")
+    return "Unknown Agent"

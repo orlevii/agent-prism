@@ -70,17 +70,17 @@ export function useChat() {
         const apiClient = initializeApiClient(settings.baseUrl);
         apiClientRef.current = apiClient;
 
-        let dependencies: Record<string, unknown> = {};
+        let agentSettings: Record<string, unknown> = {};
         try {
-          dependencies = JSON.parse(settings.dependencies || '{}');
+          agentSettings = JSON.parse(settings.settings || '{}');
         } catch {
-          // If dependencies are invalid JSON, use empty object
+          // If settings are invalid JSON, use empty object
         }
 
         const response = makeStreamingChatRequest(apiClient, {
           agent: settings.agent,
           messages: apiMessages,
-          dependencies,
+          settings: agentSettings,
           stream: true,
           use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
           deferred_tool_results: deferredToolResults,
@@ -130,17 +130,17 @@ export function useChat() {
         const apiClient = initializeApiClient(settings.baseUrl);
         apiClientRef.current = apiClient;
 
-        let dependencies: Record<string, unknown> = {};
+        let agentSettings: Record<string, unknown> = {};
         try {
-          dependencies = JSON.parse(settings.dependencies || '{}');
+          agentSettings = JSON.parse(settings.settings || '{}');
         } catch {
-          // If dependencies are invalid JSON, use empty object
+          // If settings are invalid JSON, use empty object
         }
 
         const response = makeStreamingChatRequest(apiClient, {
           agent: settings.agent,
           messages,
-          dependencies,
+          settings: agentSettings,
           stream: true,
           use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
           deferred_tool_results: decisions,
@@ -221,17 +221,17 @@ export function useChat() {
         const apiClient = initializeApiClient(settings.baseUrl);
         apiClientRef.current = apiClient;
 
-        let dependencies: Record<string, unknown> = {};
+        let agentSettings: Record<string, unknown> = {};
         try {
-          dependencies = JSON.parse(settings.dependencies || '{}');
+          agentSettings = JSON.parse(settings.settings || '{}');
         } catch {
-          // If dependencies are invalid JSON, use empty object
+          // If settings are invalid JSON, use empty object
         }
 
         const response = makeStreamingChatRequest(apiClient, {
           agent: settings.agent,
           messages: truncatedMessages,
-          dependencies,
+          settings: agentSettings,
           stream: true,
           use_tools: settings.forceHumanApproval ? 'request_approval' : 'auto',
         });

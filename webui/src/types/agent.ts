@@ -1,6 +1,6 @@
 import { ModelMessage } from './message';
 
-export interface DependencyInfo {
+export interface SettingsInfo {
   name: string;
   data: Record<string, unknown>;
 }
@@ -9,13 +9,13 @@ export interface Agent {
   id: string;
   name: string;
   description?: string;
-  dependencies: DependencyInfo[];
+  settings: SettingsInfo[];
 }
 
 export interface AgentsResponse {
   agents: Array<{
     name: string;
-    dependencies: DependencyInfo[];
+    settings: SettingsInfo[];
   }>;
 }
 
@@ -39,7 +39,7 @@ export interface DeferredToolResults {
 export interface ChatRequest {
   agent: string;
   messages: ModelMessage[];
-  dependencies?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
   stream?: boolean;
   use_tools?: 'auto' | 'request_approval';
   deferred_tool_results?: DeferredToolResults;

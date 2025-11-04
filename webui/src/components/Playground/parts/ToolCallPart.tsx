@@ -83,7 +83,7 @@ export default function ToolCallPart({
         </div>
 
         {/* Tool Call Arguments */}
-        <div className="rounded-lg bg-card/80 backdrop-blur-sm p-3 font-mono text-xs text-foreground/80 border border-border/30 shadow-inner">
+        <div className="rounded-lg bg-card/80 backdrop-blur-sm p-3 font-mono text-xs text-foreground/80 border border-border/30 shadow-inner max-h-96 overflow-y-auto">
           <pre className="whitespace-pre-wrap break-words">{JSON.stringify(args, null, 2)}</pre>
         </div>
 

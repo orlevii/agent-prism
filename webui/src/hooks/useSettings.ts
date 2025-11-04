@@ -4,7 +4,7 @@ import type { PlaygroundSettings } from '../types/playground';
 const DEFAULT_SETTINGS: PlaygroundSettings = {
   baseUrl: window.location.origin,
   agent: '',
-  dependencies: '{}',
+  settings: '{}',
   forceHumanApproval: false,
 };
 

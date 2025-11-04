@@ -30,7 +30,7 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.tools import ToolFuncEither
 
-from .agents import agent_loader
+from .agent_loader import agent_loader
 from .types import (
     DeferredToolResults,
     DoneEvent,
@@ -47,14 +47,14 @@ from .types import (
 api_router = APIRouter(prefix="/api")
 
 
-class DependencyInfo(BaseModel):
+class SettingsInfo(BaseModel):
     name: str
     data: dict[str, Any]
 
 
 class AgentInfo(BaseModel):
     name: str
-    dependencies: list[DependencyInfo]
+    settings: list[SettingsInfo]
 
 
 class GetAgentsResponse(BaseModel):
@@ -64,20 +64,22 @@ class GetAgentsResponse(BaseModel):
 @api_router.get("/agents")
 async def get_agents() -> GetAgentsResponse:
     agents = []
-    for agent_name in agent_loader._agents:
-        dependency_data = agent_loader.get_agent_dependency_data(agent_name)
-        dependencies = [
-            DependencyInfo(name=dep_name, data=dep_data)
-            for dep_name, dep_data in dependency_data.items()
-        ]
-        agents.append(AgentInfo(name=agent_name, dependencies=dependencies))
+    for exported_agent in agent_loader._agents.values():
+        settings_list = []
+        for scenario in exported_agent.scenarios:
+            settings_obj = scenario["settings"]
+            settings_data = settings_obj.model_dump()
+            settings_list.append(
+                SettingsInfo(name=scenario["name"], data=settings_data)
+            )
+        agents.append(AgentInfo(name=exported_agent.agent_name, settings=settings_list))
     return GetAgentsResponse(agents=agents)
 
 
 class ChatRequest(BaseModel):
     agent: str
     messages: list[dict[str, Any]]
-    dependencies: dict[str, Any] = {}
+    settings: dict[str, Any] = {}
     use_tools: Literal["auto", "request_approval"] = "auto"
     deferred_tool_results: DeferredToolResults | None = None
 
@@ -133,11 +135,12 @@ async def stream_agent_events(
     agent_name: str,
     user_prompt: str | None,
     message_history: list[ModelMessage],
-    dependencies: dict[str, Any],
+    settings: dict[str, Any],
     use_tools: Literal["auto", "request_approval"],
     deferred_tool_results: DeferredToolResults | None = None,
 ) -> AsyncIterator[StreamEventType]:
-    agent = agent_loader.get_agent_by_name(agent_name)
+    exported_agent = agent_loader.get(agent_name)
+    agent = exported_agent.agent
     toolsets = agent.toolsets
     if use_tools == "request_approval":
         toolsets = []
@@ -164,12 +167,20 @@ async def stream_agent_events(
                 # Approve/Reject: use boolean
                 pydantic_deferred_results.approvals[tool_id] = approved
 
+    # Initialize dependencies using the settings and init_dependencies_fn
+    if exported_agent.scenarios:
+        settings_type = type(exported_agent.scenarios[0]["settings"])
+        settings_obj = settings_type(**settings)
+        deps = exported_agent.init_dependencies_fn(settings_obj)
+    else:
+        deps = agent.deps_type(**settings)
+
     with agent.override(tools=[], toolsets=toolsets):
         try:
             async for event in agent.run_stream_events(
                 user_prompt,
                 message_history=message_history,
-                deps=agent.deps_type(**dependencies),
+                deps=deps,
                 deferred_tool_results=pydantic_deferred_results,
             ):
                 if isinstance(event, PartStartEvent):
@@ -236,7 +247,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
             agent_name=req.agent,
             user_prompt=user_prompt,
             message_history=message_history,
-            dependencies=req.dependencies,
+            settings=req.settings,
             use_tools=req.use_tools,
             deferred_tool_results=req.deferred_tool_results,
         ):
