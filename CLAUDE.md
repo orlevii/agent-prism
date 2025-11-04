@@ -10,8 +10,8 @@ Agent Playbook is **"Storybook for AI Agents"** - an interactive development too
 
 #### 1. Agent Discovery Convention
 
-- Agents are auto-discovered using the `__prism` suffix pattern:
-- Files ending with `__prism.py` are automatically imported
+- Agents are auto-discovered using the `__scenarios` suffix pattern:
+- Files ending with `__scenarios.py` are automatically imported
 - `export_agent()` registers agents during module import
 - Multiple dependency configurations enable testing different scenarios
 

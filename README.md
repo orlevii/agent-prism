@@ -43,7 +43,7 @@ pip install agent-playbook
 
 ### Basic Example
 
-Create an agent file with the `__prism` suffix (e.g., `support_agent__prism.py`):
+Create an agent file with the `__scenarios` suffix (e.g., `support_agent__scenarios.py`):
 
 ```python
 from pydantic_ai import Agent, RunContext

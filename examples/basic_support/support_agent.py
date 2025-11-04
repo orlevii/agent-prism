@@ -6,10 +6,14 @@ This example demonstrates a minimal customer support agent with:
 - Context-aware system prompts
 """
 
+import os
 from uuid import uuid4
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
+
+# So the code doesn't fail
+os.environ.setdefault("OPENAI_API_KEY", "sk-abc")
 
 
 class SupportDeps(BaseModel):

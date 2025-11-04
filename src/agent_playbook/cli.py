@@ -1,5 +1,5 @@
 import os
-from typing import Annotated, Self
+from typing import Annotated
 
 import uvicorn
 from clantic import BaseCommand
@@ -29,7 +29,7 @@ class StartCommandParams(BaseModel):
         return env
 
     @classmethod
-    def from_env_vars(cls) -> Self:
+    def from_env_vars(cls) -> "StartCommandParams":
         fields = {}
         for field_name in cls.model_fields:
             key = f"AGENT_PLAYBOOK_{field_name}".upper()

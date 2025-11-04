@@ -58,8 +58,8 @@ class _AgentLoader:
         modules: list[types.ModuleType] = []
         for module_info in pkgutil.walk_packages(pkg.__path__, prefix=f"{package}."):
             module_name = module_info.name
-            # Only import modules with __prism suffix
-            if not module_name.endswith("__prism"):
+            # Only import modules with __scenarios suffix
+            if not module_name.endswith("__scenarios"):
                 continue
             try:
                 module = importlib.import_module(module_name)
