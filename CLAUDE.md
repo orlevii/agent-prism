@@ -1,8 +1,8 @@
-# Agent Prism - Repository Context
+# Agent Playbook - Repository Context
 
 ## Mission
 
-Agent Prism is **"Storybook for AI Agents"** - an interactive development tool that provides an isolated testing environment for `pydantic-ai` agents. It enables rapid iteration, debugging, and showcasing of agents through a web playground with real-time visibility into agent thinking, tool executions, and streaming responses.
+Agent Playbook is **"Storybook for AI Agents"** - an interactive development tool that provides an isolated testing environment for `pydantic-ai` agents. It enables rapid iteration, debugging, and showcasing of agents through a web playground with real-time visibility into agent thinking, tool executions, and streaming responses.
 
 ## Architecture Overview
 
@@ -19,7 +19,7 @@ Agent Prism is **"Storybook for AI Agents"** - an interactive development tool t
 
 All agent interactions use Server-Sent Events (SSE) for streaming responses.
 
-**Event Types** (defined in `src/agent_prism/types.py`):
+**Event Types** (defined in `src/agent_playbook/types.py`):
 - `TextDeltaEvent` - Streaming text content
 - `ThinkingDeltaEvent` - Agent reasoning/thought process
 - `ToolCallExecutingEvent` - Tool invocation with arguments
@@ -33,8 +33,8 @@ All agent interactions use Server-Sent Events (SSE) for streaming responses.
 
 ### Modifying Streaming Events
 
-1. Update event types in `src/agent_prism/types.py`
-2. Update event emission in `src/agent_prism/api.py:chat_endpoint`
+1. Update event types in `src/agent_playbook/types.py`
+2. Update event emission in `src/agent_playbook/api.py:chat_endpoint`
 3. Update TypeScript types in `webui/src/types/events.ts`
 4. Update event handling in `webui/src/hooks/useStreamingResponse.ts`
 
@@ -47,7 +47,7 @@ All agent interactions use Server-Sent Events (SSE) for streaming responses.
 
 ### Backend API Changes
 
-- Add endpoints in `src/agent_prism/api.py`
+- Add endpoints in `src/agent_playbook/api.py`
 - Update TypeScript API client in `webui/src/utils/apiClient.ts`
 - Maintain type consistency between Python and TypeScript
 

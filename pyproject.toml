@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "agent-prism"
+name = "agent-playbook"
 version = "0.0.1"
 description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
-packages = [{ include = "agent_prism", from = "src" }]
+packages = [{ include = "agent_playbook", from = "src" }]
 
 [tool.poetry.scripts]
-agent-prism = "agent_prism.cli:cli"
+playbook = "agent_playbook.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -38,10 +38,10 @@ format = [
     { cmd = "ruff check src tests examples --fix --unsafe-fixes" },
 ]
 test = "pytest"
-mypy = "mypy -p agent_prism -p tests"
+mypy = "mypy -p agent_playbook -p tests"
 
 [tool.pytest.ini_options]
-addopts = "--cov=agent_prism --cov tests -v"
+addopts = "--cov=agent_playbook --cov tests -v"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "strict"
 env = ["TEST=true", "ENV=test"]

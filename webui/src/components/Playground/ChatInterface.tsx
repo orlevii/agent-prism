@@ -90,7 +90,7 @@ export default function ChatInterface({
               </div>
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-500 to-violet-500 bg-clip-text text-transparent mb-3">
-              Agent Prism
+              Agent Playbook
             </h2>
             <p className="text-lg text-muted-foreground mb-2">
               Interactive testing environment for pydantic-ai agents

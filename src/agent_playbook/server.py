@@ -1,4 +1,3 @@
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -8,21 +7,24 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from agent_prism.agents import agent_loader
-from agent_prism.api import api_router
+from agent_playbook.agents import agent_loader
+from agent_playbook.api import api_router
+
+from .cli import StartCommandParams
 
 static_dir = Path(__file__).parent / "static"
+
+START_SERVER_CONFIG = StartCommandParams.from_env_vars()
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    package = os.getenv("AGENT_PRISM_PACKAGE")
-    assert package
-    agent_loader.load(package)
+    assert START_SERVER_CONFIG.package
+    agent_loader.load(START_SERVER_CONFIG.package)
     yield
 
 
-app = FastAPI(title="Agent Prism", lifespan=lifespan)
+app = FastAPI(title="Agent Playbook", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,7 +36,7 @@ app.add_middleware(
 
 app.include_router(api_router)
 
-if not os.getenv("AGENT_PRISM_DEV"):
+if not START_SERVER_CONFIG.dev:
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 else:
     DEV_SERVER_URL = "http://localhost:5173"

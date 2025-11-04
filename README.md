@@ -1,4 +1,4 @@
-# Agent Prism 🔬
+# Agent Playbook 🔬
 
 **The Storybook for AI Agents** - Build, test, and showcase your `pydantic-ai` agents in an interactive playground.
 
@@ -11,7 +11,7 @@
 
 Building AI agents is hard. Testing them is even harder.
 
-When developing UI components, tools like Storybook revolutionized the workflow by providing an isolated environment to build, test, and showcase components. **Agent Prism brings this same philosophy to AI agent development.**
+When developing UI components, tools like Storybook revolutionized the workflow by providing an isolated environment to build, test, and showcase components. **Agent Playbook brings this same philosophy to AI agent development.**
 
 ### The Problem
 
@@ -22,7 +22,7 @@ When developing UI components, tools like Storybook revolutionized the workflow 
 
 ### The Solution
 
-Agent Prism automatically discovers your `pydantic-ai` agents, loads them into an interactive web playground, and lets you test, debug, and showcase them in real-time with full visibility into their thinking process and tool executions.
+Agent Playbook automatically discovers your `pydantic-ai` agents, loads them into an interactive web playground, and lets you test, debug, and showcase them in real-time with full visibility into their thinking process and tool executions.
 
 ## ✨ Key Features
 
@@ -38,7 +38,7 @@ Agent Prism automatically discovers your `pydantic-ai` agents, loads them into a
 ### Installation
 
 ```bash
-pip install agent-prism
+pip install agent-playbook
 ```
 
 ### Basic Example
@@ -48,7 +48,7 @@ Create an agent file with the `__prism` suffix (e.g., `support_agent__prism.py`)
 ```python
 from pydantic_ai import Agent, RunContext
 from pydantic import BaseModel
-from agent_prism.export import export_agent
+from agent_playbook.export import export_agent
 
 class SupportDeps(BaseModel):
     company_name: str
@@ -85,13 +85,13 @@ export_agent(
 Start the server and open `http://localhost:8765`:
 
 ```bash
-agent-prism myapp.agents --reload
+agent-playbook myapp.agents --reload
 ```
 
 ## 🛠️ CLI Reference
 
 ```bash
-agent-prism <package> [options]
+agent-playbook <package> [options]
 
 Options:
   --host TEXT      Server host (default: 0.0.0.0)
