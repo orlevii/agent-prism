@@ -64,13 +64,15 @@ class GetAgentsResponse(BaseModel):
 @api_router.get("/agents")
 async def get_agents() -> GetAgentsResponse:
     agents = []
-    for agent_name in agent_loader._agents:
-        dependency_data = agent_loader.get_agent_dependency_data(agent_name)
-        dependencies = [
-            DependencyInfo(name=dep_name, data=dep_data)
-            for dep_name, dep_data in dependency_data.items()
-        ]
-        agents.append(AgentInfo(name=agent_name, dependencies=dependencies))
+    for exported_agent in agent_loader._agents.values():
+        dependencies = []
+        for scenario in exported_agent.scenarios:
+            dep_obj = scenario["dependency"]
+            dep_data = dep_obj.model_dump() if hasattr(dep_obj, "model_dump") else {}
+            dependencies.append(DependencyInfo(name=scenario["name"], data=dep_data))
+        agents.append(
+            AgentInfo(name=exported_agent.agent_name, dependencies=dependencies)
+        )
     return GetAgentsResponse(agents=agents)
 
 
@@ -137,7 +139,8 @@ async def stream_agent_events(
     use_tools: Literal["auto", "request_approval"],
     deferred_tool_results: DeferredToolResults | None = None,
 ) -> AsyncIterator[StreamEventType]:
-    agent = agent_loader.get_agent_by_name(agent_name)
+    exported_agent = agent_loader.get(agent_name)
+    agent = exported_agent.agent
     toolsets = agent.toolsets
     if use_tools == "request_approval":
         toolsets = []

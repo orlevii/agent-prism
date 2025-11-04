@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
-from pydantic_ai import Agent
+from .export import ExportedAgent
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,7 @@ def _temp_sys_path_addition(path: str) -> Iterator[None]:
 
 class _AgentLoader:
     def __init__(self) -> None:
-        self._agents: dict[str, Agent[Any, Any]] = {}
-        self._dependencies: dict[str, list[str]] = {}
-        self._dependency_data: dict[str, dict[str, dict[str, Any]]] = {}
+        self._agents: dict[str, ExportedAgent[Any, Any, Any]] = {}
 
     def _import_package_with_fallback(self, package: str) -> types.ModuleType:
         try:
@@ -70,25 +68,16 @@ class _AgentLoader:
 
     def register_agent(
         self,
-        agent_name: str,
-        agent: Agent[Any, Any],
-        module_name: str,
-        dependencies: list[str] | None = None,
-        dependency_data: dict[str, dict[str, Any]] | None = None,
+        exported_agent: ExportedAgent[Any, Any, Any],
+        module_name: str = "",
     ) -> None:
+        agent_name = exported_agent.agent_name
         if agent_name in self._agents:
             logger.warning(
                 f"Duplicate agent name '{agent_name}' found in module '{module_name}'. "
                 f"Overwriting previous agent."
             )
-        self._agents[agent_name] = agent
-
-        if dependency_data:
-            self._dependency_data[agent_name] = dependency_data
-            self._dependencies[agent_name] = list(dependency_data.keys())
-        else:
-            self._dependencies[agent_name] = dependencies or []
-            self._dependency_data[agent_name] = {}
+        self._agents[agent_name] = exported_agent
 
         logger.info(f"Loaded agent '{agent_name}' from {module_name}")
 
@@ -101,14 +90,8 @@ class _AgentLoader:
 
         self._discover_modules(pkg, package)
 
-    def get_agent_by_name(self, agent_name: str) -> Agent[Any, Any]:
+    def get(self, agent_name: str) -> ExportedAgent[Any, Any, Any]:
         return self._agents[agent_name]
-
-    def get_agent_dependencies(self, agent_name: str) -> list[str]:
-        return self._dependencies.get(agent_name, [])
-
-    def get_agent_dependency_data(self, agent_name: str) -> dict[str, dict[str, Any]]:
-        return self._dependency_data.get(agent_name, {})
 
 
 agent_loader = _AgentLoader()
