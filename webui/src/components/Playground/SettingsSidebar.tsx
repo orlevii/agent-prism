@@ -24,16 +24,16 @@ interface SettingsSidebarProps {
 
 export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsSidebarProps) {
   const [selectedAgentData, setSelectedAgentData] = useState<Agent | null>(null);
-  const [selectedDependency, setSelectedDependency] = useState<string>('');
+  const [selectedScenario, setSelectedScenario] = useState<string>('');
 
-  const handleDependencySelect = (dependencyName: string) => {
-    setSelectedDependency(dependencyName);
+  const handleScenarioSelect = (scenarioName: string) => {
+    setSelectedScenario(scenarioName);
 
     if (selectedAgentData) {
-      const dependency = selectedAgentData.dependencies.find((dep) => dep.name === dependencyName);
-      if (dependency && dependency.data) {
-        const jsonStr = JSON.stringify(dependency.data, null, 2);
-        onUpdateSetting('dependencies', jsonStr);
+      const scenario = selectedAgentData.settings.find((s) => s.name === scenarioName);
+      if (scenario && scenario.data) {
+        const jsonStr = JSON.stringify(scenario.data, null, 2);
+        onUpdateSetting('settings', jsonStr);
       }
     }
   };
@@ -82,35 +82,35 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
           </p>
         </div>
 
-        {/* Dependency Selector */}
-        {selectedAgentData && selectedAgentData.dependencies.length > 0 && (
+        {/* Scenario Selector */}
+        {selectedAgentData && selectedAgentData.settings.length > 0 && (
           <div className="space-y-2">
-            <Label htmlFor="dependency-select">Select Dependency</Label>
-            <Select value={selectedDependency} onValueChange={handleDependencySelect}>
-              <SelectTrigger id="dependency-select">
-                <SelectValue placeholder="Choose a dependency..." />
+            <Label htmlFor="scenario-select">Select Scenario</Label>
+            <Select value={selectedScenario} onValueChange={handleScenarioSelect}>
+              <SelectTrigger id="scenario-select">
+                <SelectValue placeholder="Choose a scenario..." />
               </SelectTrigger>
               <SelectContent>
-                {selectedAgentData.dependencies.map((dep) => (
-                  <SelectItem key={dep.name} value={dep.name}>
-                    {dep.name}
+                {selectedAgentData.settings.map((scenario) => (
+                  <SelectItem key={scenario.name} value={scenario.name}>
+                    {scenario.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Select a dependency to auto-fill the JSON below
+              Select a scenario to auto-fill the JSON below
             </p>
           </div>
         )}
 
-        {/* Dependencies */}
+        {/* Settings */}
         <div className="space-y-2">
-          <Label htmlFor="dependencies">Agent Dependencies</Label>
+          <Label htmlFor="settings">Agent Settings</Label>
           <Textarea
-            id="dependencies"
-            value={settings.dependencies}
-            onChange={(e) => onUpdateSetting('dependencies', e.target.value)}
+            id="settings"
+            value={settings.settings}
+            onChange={(e) => onUpdateSetting('settings', e.target.value)}
             placeholder="{}"
             rows={8}
             className="font-mono text-sm"

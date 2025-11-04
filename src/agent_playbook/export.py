@@ -1,9 +1,10 @@
 import inspect
-from dataclasses import dataclass
-from typing import Callable, Generic, TypedDict, TypeVar
+from typing import Callable, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
+
+from agent_playbook.export_types import ExportedAgent, Scenario
 
 from .agent_loader import agent_loader
 
@@ -12,23 +13,10 @@ TResp = TypeVar("TResp")
 TSettings = TypeVar("TSettings", bound=BaseModel)
 
 
-class Scenario(TypedDict, Generic[TDeps]):
-    name: str
-    dependency: TDeps
-
-
-@dataclass
-class ExportedAgent(Generic[TDeps, TResp, TSettings]):
-    agent: Agent[TDeps, TResp]
-    scenarios: list[Scenario[TDeps]]
-    agent_name: str
-    init_dependencies_fn: Callable[[TSettings], TDeps]
-
-
 def export(
     *,
     agent: Agent[TDeps, TResp],
-    scenarios: list[Scenario[TDeps]],
+    scenarios: list[Scenario[TSettings]],
     agent_name: str | None = None,
     init_dependencies_fn: Callable[[TSettings], TDeps],
 ) -> None:

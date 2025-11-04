@@ -6,9 +6,9 @@ import sys
 import types
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Iterator
 
-from .export import ExportedAgent
+from .export_types import GenericExportedAgent
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def _temp_sys_path_addition(path: str) -> Iterator[None]:
 
 class _AgentLoader:
     def __init__(self) -> None:
-        self._agents: dict[str, ExportedAgent[Any, Any, Any]] = {}
+        self._agents: dict[str, GenericExportedAgent] = {}
 
     def _import_package_with_fallback(self, package: str) -> types.ModuleType:
         try:
@@ -68,7 +68,7 @@ class _AgentLoader:
 
     def register_agent(
         self,
-        exported_agent: ExportedAgent[Any, Any, Any],
+        exported_agent: GenericExportedAgent,
         module_name: str = "",
     ) -> None:
         agent_name = exported_agent.agent_name
@@ -90,7 +90,7 @@ class _AgentLoader:
 
         self._discover_modules(pkg, package)
 
-    def get(self, agent_name: str) -> ExportedAgent[Any, Any, Any]:
+    def get(self, agent_name: str) -> GenericExportedAgent:
         return self._agents[agent_name]
 
 

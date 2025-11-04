@@ -55,7 +55,7 @@ export default function AgentSelector({
         const agentObjects: Agent[] = data.agents.map((agent) => ({
           id: agent.name,
           name: agent.name,
-          dependencies: agent.dependencies,
+          settings: agent.settings,
         }));
         const sortedAgents = agentObjects.sort((a, b) => a.name.localeCompare(b.name));
         setAgents(sortedAgents);

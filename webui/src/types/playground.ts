@@ -35,7 +35,7 @@ export interface Message {
 export interface PlaygroundSettings {
   baseUrl: string;
   agent: string;
-  dependencies: string; // JSON string
+  settings: string; // JSON string
   forceHumanApproval: boolean;
 }
 
