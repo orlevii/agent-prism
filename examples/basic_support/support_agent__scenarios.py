@@ -1,12 +1,12 @@
-from agent_prism.export import export_agent
+from agent_playbook.export import export
 
 from .support_agent import SupportDeps, support_agent
 
 # Export the agent with dependency configurations
-# Each configuration appears as a separate option in the Agent Prism UI
-export_agent(
+# Each configuration appears as a separate option in the Agent Playbook UI
+export(
     agent=support_agent,
-    dependencies=[
+    scenarios=[
         {
             "name": "ACME Corporation",
             "dependency": SupportDeps(

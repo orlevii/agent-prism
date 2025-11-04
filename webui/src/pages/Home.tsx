@@ -45,7 +45,7 @@ export default function Home() {
         <div className="flex items-center justify-between max-w-[1800px] mx-auto">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-violet-500 bg-clip-text text-transparent">
-              Agent Prism
+              Agent Playbook
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               Interactive testing for pydantic-ai agents

@@ -20,6 +20,24 @@ class StartCommandParams(BaseModel):
         False
     )
 
+    def to_env_vars(self) -> dict[str, str]:
+        env = {}
+        for k, v in self:
+            if v:
+                key = f"AGENT_PLAYBOOK_{k}".upper()
+                env[key] = str(v)
+        return env
+
+    @classmethod
+    def from_env_vars(cls) -> "StartCommandParams":
+        fields = {}
+        for field_name in cls.model_fields:
+            key = f"AGENT_PLAYBOOK_{field_name}".upper()
+            if key in os.environ:
+                fields[field_name] = os.getenv(key)
+
+        return cls(**fields)
+
 
 class StartCommand(BaseCommand[StartCommandParams]):
     NAME = "start"
@@ -27,7 +45,7 @@ class StartCommand(BaseCommand[StartCommandParams]):
     def run(self) -> None:
         self._prep_env()
         uvicorn.run(
-            "agent_prism.server:app",
+            "agent_playbook.server:app",
             host=self.params.host,
             port=self.params.port,
             root_path=self.params.root_path,
@@ -35,10 +53,7 @@ class StartCommand(BaseCommand[StartCommandParams]):
         )
 
     def _prep_env(self) -> None:
-        for k, v in self.params:
-            if v:
-                key = f"AGENT_PRISM_{k}".upper()
-                os.environ[key] = str(v)
+        os.environ.update(self.params.to_env_vars())
 
 
 cli = StartCommand.to_command()

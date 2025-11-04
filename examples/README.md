@@ -1,6 +1,6 @@
-# Agent Prism Examples
+# Agent Playbook Examples
 
-This directory contains example agents demonstrating how to use Agent Prism with `pydantic-ai`.
+This directory contains example agents demonstrating how to use Agent Playbook with `pydantic-ai`.
 
 ## Running Examples
 
@@ -9,7 +9,7 @@ This directory contains example agents demonstrating how to use Agent Prism with
 From the root of the repository, you can run all examples at once:
 
 ```bash
-agent-prism examples
+agent-playbook examples
 ```
 
 This will discover and load all agents in the examples directory. Then open your browser to `http://localhost:8765` to interact with them in the web playground.
@@ -19,7 +19,7 @@ This will discover and load all agents in the examples directory. Then open your
 To run a specific example:
 
 ```bash
-agent-prism examples.basic_support
+agent-playbook examples.basic_support
 ```
 
 ### Development Mode
@@ -27,7 +27,7 @@ agent-prism examples.basic_support
 For auto-reload during development:
 
 ```bash
-agent-prism examples --reload
+agent-playbook examples --reload
 ```
 
 ## Available Examples
@@ -41,7 +41,7 @@ A minimal customer support agent demonstrating:
 - Simple conversational flow
 
 **Complexity:** Minimal
-**Run with:** `agent-prism examples.basic_support`
+**Run with:** `agent-playbook examples.basic_support`
 
 See [basic_support/README.md](basic_support/README.md) for details.
 
@@ -58,7 +58,7 @@ examples/
 
 **Key Requirements:**
 1. Agent files must end with `__prisim` suffix for auto-discovery
-2. Use `export_agent()` from `agent_prism.export` to register the agent
+2. Use `export_agent()` from `agent_playbook.export` to register the agent
 3. Define dependencies using Pydantic models for type safety
 4. Provide at least one dependency configuration
 

@@ -68,4 +68,4 @@ errors/
 /logs/
 
 .vite/
-src/agent_prism/static/
+src/agent_playbook/static/
