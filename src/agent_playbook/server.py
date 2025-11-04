@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from agent_playbook.agents import agent_loader
+from agent_playbook.agent_loader import agent_loader
 from agent_playbook.api import api_router
 
 from .cli import StartCommandParams

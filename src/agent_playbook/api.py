@@ -30,7 +30,7 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.tools import ToolFuncEither
 
-from .agents import agent_loader
+from .agent_loader import agent_loader
 from .types import (
     DeferredToolResults,
     DoneEvent,

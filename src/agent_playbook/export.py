@@ -3,7 +3,7 @@ from typing import Any, Generic, TypedDict, TypeVar
 
 from pydantic_ai import Agent
 
-from .agents import agent_loader
+from .agent_loader import agent_loader
 
 TDeps = TypeVar("TDeps")
 TResp = TypeVar("TResp")
