@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import AgentSelector from './AgentSelector';
+import { SettingsFormEditor } from './SettingsFormEditor';
 import type { PlaygroundSettings } from '../../types/playground';
 import type { Agent } from '../../types/agent';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -13,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Code, FormInput, AlertCircle } from 'lucide-react';
 
 interface SettingsSidebarProps {
   settings: PlaygroundSettings;
@@ -25,6 +29,8 @@ interface SettingsSidebarProps {
 export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsSidebarProps) {
   const [selectedAgentData, setSelectedAgentData] = useState<Agent | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<string>('');
+  const [editorMode, setEditorMode] = useState<'json' | 'form'>('json');
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   const handleScenarioSelect = (scenarioName: string) => {
     setSelectedScenario(scenarioName);
@@ -35,6 +41,26 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
         const jsonStr = JSON.stringify(scenario.data, null, 2);
         onUpdateSetting('settings', jsonStr);
       }
+    }
+  };
+
+  const handleModeToggle = () => {
+    // If switching from JSON to Form mode, validate JSON first
+    if (editorMode === 'json') {
+      try {
+        const trimmed = settings.settings.trim();
+        if (trimmed) {
+          JSON.parse(trimmed);
+        }
+        setJsonError(null);
+        setEditorMode('form');
+      } catch (error) {
+        setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
+      }
+    } else {
+      // Switching from Form to JSON mode - always allowed
+      setJsonError(null);
+      setEditorMode('json');
     }
   };
 
@@ -106,18 +132,56 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
 
         {/* Settings */}
         <div className="space-y-2">
-          <Label htmlFor="settings">Agent Settings</Label>
-          <Textarea
-            id="settings"
-            value={settings.settings}
-            onChange={(e) => onUpdateSetting('settings', e.target.value)}
-            placeholder="{}"
-            rows={8}
-            className="font-mono text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            JSON object with agent-specific configuration
-          </p>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="settings">Agent Settings</Label>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleModeToggle}
+              className="h-8 w-8"
+              title={editorMode === 'json' ? 'Switch to form editor' : 'Switch to JSON editor'}
+            >
+              {editorMode === 'json' ? (
+                <FormInput className="h-4 w-4" />
+              ) : (
+                <Code className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
+          {jsonError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Invalid JSON: {jsonError}</AlertDescription>
+            </Alert>
+          )}
+
+          {editorMode === 'json' ? (
+            <>
+              <Textarea
+                id="settings"
+                value={settings.settings}
+                onChange={(e) => {
+                  onUpdateSetting('settings', e.target.value);
+                  setJsonError(null); // Clear error on edit
+                }}
+                placeholder="{}"
+                rows={8}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                JSON object with agent-specific configuration
+              </p>
+            </>
+          ) : (
+            <>
+              <SettingsFormEditor
+                value={settings.settings}
+                onChange={(value) => onUpdateSetting('settings', value)}
+              />
+              <p className="text-xs text-muted-foreground">Edit settings using form fields</p>
+            </>
+          )}
         </div>
       </div>
     </div>

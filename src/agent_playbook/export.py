@@ -1,16 +1,43 @@
 import inspect
-from typing import Callable, TypeVar
+from typing import Any, Callable, cast, overload
 
-from pydantic import BaseModel
 from pydantic_ai import Agent
 
-from agent_playbook.export_types import ExportedAgent, Scenario
+from agent_playbook.export_types import (
+    ExportedAgent,
+    GenericExportedAgent,
+    Scenario,
+    TDeps,
+    TResp,
+    TSettings,
+)
 
 from .agent_loader import agent_loader
 
-TDeps = TypeVar("TDeps")
-TResp = TypeVar("TResp")
-TSettings = TypeVar("TSettings", bound=BaseModel)
+
+def _identity(settings: Any) -> Any:
+    return settings
+
+
+@overload
+def export(
+    *,
+    agent: Agent[TSettings, TResp],
+    scenarios: list[Scenario[TSettings]],
+    agent_name: str | None = None,
+) -> None:
+    pass
+
+
+@overload
+def export(
+    *,
+    agent: Agent[TDeps, TResp],
+    scenarios: list[Scenario[TSettings]],
+    agent_name: str | None = None,
+    init_dependencies_fn: Callable[[TSettings], TDeps],
+) -> None:
+    pass
 
 
 def export(
@@ -18,7 +45,7 @@ def export(
     agent: Agent[TDeps, TResp],
     scenarios: list[Scenario[TSettings]],
     agent_name: str | None = None,
-    init_dependencies_fn: Callable[[TSettings], TDeps],
+    init_dependencies_fn: Callable[[TSettings], TDeps] = _identity,
 ) -> None:
     name = agent_name or agent.name or _get_fallback_agent_name()
 
@@ -29,7 +56,9 @@ def export(
         init_dependencies_fn=init_dependencies_fn,
     )
 
-    agent_loader.register_agent(exported_agent=exported_agent)
+    agent_loader.register_agent(
+        exported_agent=cast("GenericExportedAgent", exported_agent)
+    )
 
 
 def _get_fallback_agent_name() -> str:
