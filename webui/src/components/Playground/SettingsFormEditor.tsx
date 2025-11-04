@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { detectTextDirection } from '@/utils/text';
 
 interface SettingsFormEditorProps {
   value: string;
@@ -93,6 +94,9 @@ export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps)
 
         // String field (default)
         if (valueType === 'string') {
+          const textValue = value as string;
+          const direction = detectTextDirection(textValue);
+
           return (
             <div key={key} className="space-y-2">
               <Label htmlFor={`field-${key}`} className="text-sm font-medium">
@@ -100,10 +104,11 @@ export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps)
               </Label>
               <Textarea
                 id={`field-${key}`}
-                value={value as string}
+                value={textValue}
                 onChange={(e) => handleFieldChange(key, e.target.value)}
                 rows={3}
                 className="resize-y font-mono text-sm"
+                dir={direction}
               />
             </div>
           );

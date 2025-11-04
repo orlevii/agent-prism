@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Code, FormInput, AlertCircle } from 'lucide-react';
+import { FormInput, AlertCircle } from 'lucide-react';
 
 interface SettingsSidebarProps {
   settings: PlaygroundSettings;
@@ -37,7 +37,6 @@ interface SettingsSidebarProps {
 export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsSidebarProps) {
   const [selectedAgentData, setSelectedAgentData] = useState<Agent | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<string>('');
-  const [editorMode, setEditorMode] = useState<'json' | 'form'>('json');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [draftSettings, setDraftSettings] = useState<string>('');
@@ -51,26 +50,6 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
         const jsonStr = JSON.stringify(scenario.data, null, 2);
         onUpdateSetting('settings', jsonStr);
       }
-    }
-  };
-
-  const handleModeToggle = () => {
-    // If switching from JSON to Form mode, validate JSON first
-    if (editorMode === 'json') {
-      try {
-        const trimmed = settings.settings.trim();
-        if (trimmed) {
-          JSON.parse(trimmed);
-        }
-        setJsonError(null);
-        setEditorMode('form');
-      } catch (error) {
-        setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
-      }
-    } else {
-      // Switching from Form to JSON mode - always allowed
-      setJsonError(null);
-      setEditorMode('json');
     }
   };
 
@@ -169,31 +148,16 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="settings">Agent Settings</Label>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleOpenFormModal}
-                className="h-8 px-3 text-xs"
-                title="Open form editor in modal"
-              >
-                <FormInput className="h-3.5 w-3.5 mr-1.5" />
-                Open Form Editor
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleModeToggle}
-                className="h-8 w-8"
-                title={editorMode === 'json' ? 'Switch to form editor' : 'Switch to JSON editor'}
-              >
-                {editorMode === 'json' ? (
-                  <FormInput className="h-4 w-4" />
-                ) : (
-                  <Code className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenFormModal}
+              className="h-8 px-3 text-xs"
+              title="Open form editor in modal"
+            >
+              <FormInput className="h-3.5 w-3.5 mr-1.5" />
+              Open Form Editor
+            </Button>
           </div>
 
           {jsonError && (
@@ -203,32 +167,20 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
             </Alert>
           )}
 
-          {editorMode === 'json' ? (
-            <>
-              <Textarea
-                id="settings"
-                value={settings.settings}
-                onChange={(e) => {
-                  onUpdateSetting('settings', e.target.value);
-                  setJsonError(null); // Clear error on edit
-                }}
-                placeholder="{}"
-                rows={8}
-                className="font-mono text-sm max-h-96 overflow-y-auto"
-              />
-              <p className="text-xs text-muted-foreground">
-                JSON object with agent-specific configuration
-              </p>
-            </>
-          ) : (
-            <>
-              <SettingsFormEditor
-                value={settings.settings}
-                onChange={(value) => onUpdateSetting('settings', value)}
-              />
-              <p className="text-xs text-muted-foreground">Edit settings using form fields</p>
-            </>
-          )}
+          <Textarea
+            id="settings"
+            value={settings.settings}
+            onChange={(e) => {
+              onUpdateSetting('settings', e.target.value);
+              setJsonError(null); // Clear error on edit
+            }}
+            placeholder="{}"
+            rows={8}
+            className="font-mono text-sm max-h-96 overflow-y-auto"
+          />
+          <p className="text-xs text-muted-foreground">
+            JSON object with agent-specific configuration
+          </p>
         </div>
       </div>
 

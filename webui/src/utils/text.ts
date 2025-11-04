@@ -6,8 +6,8 @@
 export function detectTextDirection(text: string): 'rtl' | 'ltr' {
   if (!text) return 'ltr';
 
-  // Find the first significant character (skip whitespace and common punctuation)
-  const significantChar = text.match(/[^\s\p{P}\p{S}]/u)?.[0];
+  // Find the first significant character (skip whitespace, punctuation, symbols, and digits)
+  const significantChar = text.match(/[^\s\p{P}\p{S}\p{N}]/u)?.[0];
 
   if (!significantChar) return 'ltr';
 
