@@ -26,6 +26,12 @@ pytest-env = "^1.2.0"
 pytest-mock = "^3.15.1"
 python-dotenv = "^1.2.1"
 pydantic-ai = "^1.9.1"
+doccmd = "^2025.10.27"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.6.23"
+mkdocs-awesome-pages-plugin = "^2.10.1"
 
 [tool.poe.tasks]
 lint = "ruff check src tests examples"
@@ -39,6 +45,11 @@ format = [
 ]
 test = "pytest"
 mypy = "mypy -p agent_playbook -p tests"
+"doccmd" = "doccmd --language=python --no-pad-file --command='ruff format'"
+
+# docs
+"docs:build".shell = "cd docs && mkdocs build"
+"docs:serve".shell = "cd docs && mkdocs serve"
 
 [tool.pytest.ini_options]
 addopts = "--cov=agent_playbook --cov tests -v"
