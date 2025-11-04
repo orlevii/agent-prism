@@ -2,9 +2,9 @@ import os
 from typing import Annotated
 
 import uvicorn
+from clantic import BaseCommand
+from clantic.types import Argument, Flag, Option, OptionSettings
 from pydantic import BaseModel
-from swiftcli import BaseCommand
-from swiftcli.types import Argument, Flag, Option, OptionSettings
 
 
 class StartCommandParams(BaseModel):
