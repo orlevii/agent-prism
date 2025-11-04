@@ -2,11 +2,6 @@ from agent_playbook.export import export
 
 from .support_agent import SupportDeps, support_agent
 
-
-def init_support_deps(settings: SupportDeps) -> SupportDeps:
-    return settings
-
-
 # Export the agent with settings configurations
 # Each configuration appears as a separate option in the Agent Playbook UI
 export(
@@ -19,5 +14,4 @@ export(
             ),
         },
     ],
-    init_dependencies_fn=init_support_deps,
 )
