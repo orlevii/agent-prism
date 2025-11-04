@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { detectTextDirection } from '@/utils/text';
+import { flattenObject, unflattenObject } from '@/utils/objectHelpers';
 
 interface SettingsFormEditorProps {
   value: string;
@@ -13,12 +14,15 @@ interface SettingsFormEditorProps {
 
 export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps) {
   let parsedSettings: Record<string, unknown> = {};
+  let flattenedSettings: Record<string, unknown> = {};
   let parseError: string | null = null;
 
   // Parse JSON
   try {
     const trimmed = value.trim();
     parsedSettings = trimmed ? JSON.parse(trimmed) : {};
+    // Flatten nested objects for form rendering
+    flattenedSettings = flattenObject(parsedSettings);
   } catch (error) {
     parseError = error instanceof Error ? error.message : 'Invalid JSON';
   }
@@ -26,7 +30,10 @@ export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps)
   // Handle field updates
   const handleFieldChange = (key: string, newValue: unknown) => {
     try {
-      const updated = { ...parsedSettings, [key]: newValue };
+      // Update the flattened object
+      const updatedFlattened = { ...flattenedSettings, [key]: newValue };
+      // Unflatten back to nested structure
+      const updated = unflattenObject(updatedFlattened);
       onChange(JSON.stringify(updated, null, 2));
     } catch (error) {
       console.error('Failed to update field:', error);
@@ -44,7 +51,7 @@ export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps)
   }
 
   // Render empty state
-  const entries = Object.entries(parsedSettings);
+  const entries = Object.entries(flattenedSettings);
   if (entries.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-md">
@@ -114,12 +121,25 @@ export function SettingsFormEditor({ value, onChange }: SettingsFormEditorProps)
           );
         }
 
-        // Unsupported types (null, object, array, etc.)
+        // Arrays and other unsupported types
+        if (Array.isArray(value)) {
+          return (
+            <div key={key} className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">{key}</Label>
+              <div className="text-xs text-muted-foreground p-2 bg-muted rounded">
+                Arrays are not supported in form editor (use JSON mode to edit)
+              </div>
+            </div>
+          );
+        }
+
+        // Other unsupported types (null, undefined, etc.)
         return (
           <div key={key} className="space-y-2">
             <Label className="text-sm font-medium text-muted-foreground">{key}</Label>
             <div className="text-xs text-muted-foreground p-2 bg-muted rounded">
-              Unsupported type: {valueType} (use JSON mode to edit)
+              Unsupported type: {valueType === 'object' ? 'null' : valueType} (use JSON mode to
+              edit)
             </div>
           </div>
         );
