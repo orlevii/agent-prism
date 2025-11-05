@@ -31,7 +31,6 @@ Agent Playbook automatically discovers your `pydantic-ai` agents, loads them int
 - 🔄 **Streaming Support** - Watch agent responses, thinking, and tool calls as they happen
 - 🧩 **Dependency Injection** - Configure and switch between different dependency contexts
 - 🛠️ **Tool Visualization** - See exactly what tools agents call with arguments and results
-- 📦 **Type-Safe** - Full TypeScript and Python type hints throughout
 
 ## 🚀 Quick Start
 
@@ -41,57 +40,81 @@ Agent Playbook automatically discovers your `pydantic-ai` agents, loads them int
 pip install agent-playbook
 ```
 
+(The CLI command is `playbook`, not `agent-playbook`)
+
 ### Basic Example
 
-Create an agent file with the `__scenarios` suffix (e.g., `support_agent__scenarios.py`):
+Agent Playbook requires two separate files:
+
+**Step 1: Define your agent** (`support_agent.py`)
 
 ```python
 from pydantic_ai import Agent, RunContext
 from pydantic import BaseModel
-from agent_playbook.export import export_agent
+
 
 class SupportDeps(BaseModel):
     company_name: str
     support_email: str
 
-support_agent = Agent(
-    model="openai:gpt-4",
-    deps_type=SupportDeps
-)
+
+support_agent = Agent(model="openai:gpt-4", deps_type=SupportDeps)
+
 
 @support_agent.system_prompt
 async def support_system_prompt(ctx: RunContext[SupportDeps]) -> str:
     return f"You are a helpful customer support agent for {ctx.deps.company_name}."
+
 
 @support_agent.tool
 async def check_order_status(ctx: RunContext[SupportDeps], order_id: str) -> str:
     """Check the status of a customer order."""
     return f"Order {order_id} is being processed and will ship in 2-3 business days."
 
+
 @support_agent.tool
 async def create_ticket(ctx: RunContext[SupportDeps], issue: str, priority: str) -> str:
     """Create a support ticket."""
     return f"Ticket created with {priority} priority. Contact: {ctx.deps.support_email}"
+```
 
-export_agent(
+**Step 2: Export scenarios** (`support_agent__scenarios.py`)
+
+Agent Playbook auto-discovers files ending with `__scenarios.py` and registers the agents. Use the `export()` function to define different configurations:
+
+```python
+from agent_playbook import export
+from .support_agent import SupportDeps, support_agent
+
+export(
     agent=support_agent,
-    dependencies=[
-        {"name": "ACME Corp", "dependency": SupportDeps(company_name="ACME Corporation", support_email="support@acme.com")},
-        {"name": "TechStart", "dependency": SupportDeps(company_name="TechStart Inc", support_email="help@techstart.io")}
-    ]
+    scenarios=[
+        {
+            "name": "ACME Corp",
+            "settings": SupportDeps(
+                company_name="ACME Corporation", support_email="support@acme.com"
+            ),
+        },
+        {
+            "name": "TechStart",
+            "settings": SupportDeps(
+                company_name="TechStart Inc", support_email="help@techstart.io"
+            ),
+        },
+    ],
 )
 ```
 
 Start the server and open `http://localhost:8765`:
 
 ```bash
-agent-playbook myapp.agents --reload
+playbook myapp.agents --reload
 ```
 
 ## 🛠️ CLI Reference
 
 ```bash
-agent-playbook <package> [options]
+playbook <package> [options]
 
 Options:
   --host TEXT      Server host (default: 0.0.0.0)
