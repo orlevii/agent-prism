@@ -3,7 +3,9 @@ from typing import Any, Callable, cast, overload
 
 from pydantic_ai import Agent
 
-from agent_playbook.export_types import (
+from agent_playbook.agent_loader import agent_loader
+
+from .export_types import (
     ExportedAgent,
     GenericExportedAgent,
     Scenario,
@@ -11,8 +13,6 @@ from agent_playbook.export_types import (
     TResp,
     TSettings,
 )
-
-from .agent_loader import agent_loader
 
 
 def _identity(settings: Any) -> Any:

@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from .export_types import GenericExportedAgent
+from ._export.export_types import GenericExportedAgent
 
 logger = logging.getLogger(__name__)
 

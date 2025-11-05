@@ -1,6 +1,6 @@
-site_name: agent-prism
-site_description: Build testable CLI apps with click and pydantic
-repo_url: https://github.com/orlevii/agent-prism
+site_name: Agent Playbook
+site_description: Storybook for AI Agents - Interactive development tool for pydantic-ai agents
+repo_url: https://github.com/orlevii/agent-playbook
 theme:
   name: material
   features:
@@ -39,3 +39,9 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - Exporting Agents: exporting-agents.md
+  - Scenarios: scenarios.md
+  - Playground Guide: playground-guide.md
+  - CLI Reference: cli-reference.md
+  - Common Patterns: patterns.md
