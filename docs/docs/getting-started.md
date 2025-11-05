@@ -43,6 +43,7 @@ agent = Agent(
     system_prompt="You are a helpful support agent.",
 )
 
+
 @agent.tool
 def check_order_status(order_id: str) -> str:
     """Check the status of an order."""
@@ -58,9 +59,14 @@ from agent_playbook import export
 from .support_agent import agent
 
 export(
-    agent,
-    name="Support Agent",
-    description="Helps customers with their orders",
+    agent=agent,
+    agent_name="Support Agent",
+    scenarios=[
+        {
+            "name": "Default",
+            "settings": None,
+        }
+    ],
 )
 ```
 

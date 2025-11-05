@@ -84,18 +84,6 @@ The playground shows:
 - ✅ All parameters sent to the tool
 - ✅ The result returned by the tool
 
-### Tool Mocking
-
-For development, you can mock tool results:
-- Click the "Mock" button on a tool call
-- Enter a custom result
-- The agent continues with your mocked response
-
-This is useful for:
-- Testing error handling without calling real APIs
-- Speeding up development
-- Testing rare error cases
-
 ## Adjusting Settings
 
 Each agent can have settings (configured via dependencies):
@@ -112,15 +100,6 @@ Edit the settings:
 1. Click the Settings panel on the right
 2. Modify the JSON
 3. Changes apply to the next message
-
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Enter` | Send message |
-| `Shift + Enter` | New line in message |
-| `Ctrl/Cmd + K` | Focus message input |
-| `Ctrl/Cmd + L` | Clear history |
 
 ## Pro Tips
 

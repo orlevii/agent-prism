@@ -19,8 +19,14 @@ from agent_playbook import export
 from .my_agent import agent
 
 export(
-    agent,
-    name="My Agent",
+    agent=agent,
+    agent_name="My Agent",
+    scenarios=[
+        {
+            "name": "Default",
+            "settings": None,
+        }
+    ],
 )
 ```
 
@@ -33,31 +39,37 @@ In the playground, you'll see:
 Export the same agent with different configurations:
 
 ```python
+from pydantic import BaseModel
 from agent_playbook import export
 from .my_agent import agent
 
-# Test scenario
+
+class SupportConfig(BaseModel):
+    api_key: str
+    api_url: str
+
+
 export(
-    agent,
-    name="Support Agent",
+    agent=agent,
+    agent_name="Support Agent",
     scenarios=[
         {
             "name": "Development",
             "description": "Uses test API endpoints",
-            "dependencies": {
-                "api_key": "test-key-123",
-                "api_url": "https://api-dev.example.com",
-            }
+            "settings": SupportConfig(
+                api_key="test-key-123",
+                api_url="https://api-dev.example.com",
+            ),
         },
         {
             "name": "Production",
             "description": "Uses production API endpoints",
-            "dependencies": {
-                "api_key": "prod-key-xyz",
-                "api_url": "https://api.example.com",
-            }
+            "settings": SupportConfig(
+                api_key="prod-key-xyz",
+                api_url="https://api.example.com",
+            ),
         },
-    ]
+    ],
 )
 ```
 
@@ -69,6 +81,7 @@ Scenarios work best with pydantic-ai's dependency injection system. Define a dep
 
 ```python
 from pydantic import BaseModel
+
 
 class SupportDeps(BaseModel):
     company_name: str
@@ -87,6 +100,7 @@ agent = Agent(
     deps_type=SupportDeps,
 )
 
+
 @agent.tool
 def create_ticket(issue: str) -> str:
     """Create a support ticket."""
@@ -101,26 +115,26 @@ from agent_playbook import export
 from .support_agent import agent, SupportDeps
 
 export(
-    agent,
-    name="Support Agent",
+    agent=agent,
+    agent_name="Support Agent",
     scenarios=[
         {
             "name": "ACME Corp",
-            "dependencies": {
-                "company_name": "ACME Corporation",
-                "support_email": "support@acme.com",
-                "api_key": "acme-key-123",
-            }
+            "settings": SupportDeps(
+                company_name="ACME Corporation",
+                support_email="support@acme.com",
+                api_key="acme-key-123",
+            ),
         },
         {
             "name": "TechStart Inc",
-            "dependencies": {
-                "company_name": "TechStart Inc",
-                "support_email": "help@techstart.io",
-                "api_key": "techstart-key-456",
-            }
+            "settings": SupportDeps(
+                company_name="TechStart Inc",
+                support_email="help@techstart.io",
+                api_key="techstart-key-456",
+            ),
         },
-    ]
+    ],
 )
 ```
 
@@ -144,30 +158,32 @@ For dependencies that need initialization logic (loading files, connecting to da
 ```python
 from agent_playbook import export
 
-def create_deps(config: dict) -> SupportDeps:
+
+def create_deps(settings: dict) -> SupportDeps:
     """Initialize dependencies with custom logic."""
     # Load API credentials from config
-    api_key = config.get("api_key")
+    api_key = settings.get("api_key")
 
     # Could do validation, file loading, connections, etc.
 
     return SupportDeps(
-        company_name=config["company_name"],
-        support_email=config["support_email"],
+        company_name=settings["company_name"],
+        support_email=settings["support_email"],
         api_key=api_key,
     )
 
+
 export(
-    agent,
-    name="Support Agent",
+    agent=agent,
+    agent_name="Support Agent",
     scenarios=[
         {
             "name": "ACME Corp",
-            "dependencies": {
+            "settings": {
                 "company_name": "ACME Corporation",
                 "support_email": "support@acme.com",
                 "api_key": "acme-key-123",
-            }
+            },
         },
     ],
     init_dependencies_fn=create_deps,
@@ -179,6 +195,14 @@ export(
 ### Pattern: Customer-Specific Configurations
 
 ```python
+from pydantic import BaseModel
+
+
+class CustomerConfig(BaseModel):
+    company_name: str
+    api_key: str
+
+
 customers = [
     {"company_name": "ACME Corp", "api_key": "key1"},
     {"company_name": "TechStart", "api_key": "key2"},
@@ -188,45 +212,54 @@ customers = [
 scenarios = [
     {
         "name": customer["company_name"],
-        "dependencies": customer,
+        "settings": CustomerConfig(**customer),
     }
     for customer in customers
 ]
 
-export(agent, name="Support Agent", scenarios=scenarios)
+export(agent=agent, agent_name="Support Agent", scenarios=scenarios)
 ```
 
 ### Pattern: Environment Configurations
 
 ```python
+import os
+from pydantic import BaseModel
+
+
+class EnvConfig(BaseModel):
+    api_url: str
+    api_key: str
+
+
 scenarios = [
     {
         "name": "Local",
         "description": "Development on localhost",
-        "dependencies": {
-            "api_url": "http://localhost:3000",
-            "api_key": "dev-key",
-        }
+        "settings": EnvConfig(
+            api_url="http://localhost:3000",
+            api_key="dev-key",
+        ),
     },
     {
         "name": "Staging",
         "description": "Staging environment",
-        "dependencies": {
-            "api_url": "https://staging-api.example.com",
-            "api_key": os.getenv("STAGING_API_KEY"),
-        }
+        "settings": EnvConfig(
+            api_url="https://staging-api.example.com",
+            api_key=os.getenv("STAGING_API_KEY", ""),
+        ),
     },
     {
         "name": "Production",
         "description": "Production environment",
-        "dependencies": {
-            "api_url": "https://api.example.com",
-            "api_key": os.getenv("PROD_API_KEY"),
-        }
+        "settings": EnvConfig(
+            api_url="https://api.example.com",
+            api_key=os.getenv("PROD_API_KEY", ""),
+        ),
     },
 ]
 
-export(agent, name="My Agent", scenarios=scenarios)
+export(agent=agent, agent_name="My Agent", scenarios=scenarios)
 ```
 
 ## Next Steps

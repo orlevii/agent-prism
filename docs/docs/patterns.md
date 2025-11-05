@@ -7,7 +7,16 @@ Real-world patterns for using Agent Playbook effectively.
 Test the same agent with different customer configurations:
 
 ```python
+from pydantic import BaseModel
 from agent_playbook import export
+
+
+class CustomerConfig(BaseModel):
+    id: int
+    name: str
+    api_key: str
+    plan: str
+
 
 customers = [
     {"id": 1, "name": "ACME Corp", "api_key": "key1", "plan": "pro"},
@@ -19,14 +28,14 @@ scenarios = [
     {
         "name": f"{c['name']} ({c['plan'].upper()})",
         "description": f"Customer ID: {c['id']}",
-        "dependencies": c,
+        "settings": CustomerConfig(**c),
     }
     for c in customers
 ]
 
 export(
-    agent,
-    name="Support Agent",
+    agent=agent,
+    agent_name="Support Agent",
     scenarios=scenarios,
 )
 ```
@@ -42,6 +51,15 @@ Test across dev → staging → production:
 
 ```python
 import os
+from pydantic import BaseModel
+from agent_playbook import export
+
+
+class EnvConfig(BaseModel):
+    api_url: str
+    api_key: str
+    log_level: str
+
 
 environments = {
     "Local": {
@@ -65,12 +83,12 @@ scenarios = [
     {
         "name": env_name,
         "description": f"Testing against {env_name}",
-        "dependencies": config,
+        "settings": EnvConfig(**config),
     }
     for env_name, config in environments.items()
 ]
 
-export(agent, name="My Agent", scenarios=scenarios)
+export(agent=agent, agent_name="My Agent", scenarios=scenarios)
 ```
 
 **Benefits:**
@@ -83,9 +101,17 @@ export(agent, name="My Agent", scenarios=scenarios)
 Develop and test without external dependencies:
 
 ```python
+from pydantic import BaseModel
+
+
+class PaymentDeps(BaseModel):
+    mock_mode: bool
+    payment_service: str = None  # None when mocked
+
+
 # In your tool definition
 @agent.tool
-def check_payment_status(transaction_id: str, deps: MyDeps) -> str:
+def check_payment_status(transaction_id: str, deps: PaymentDeps) -> str:
     """Check payment status."""
     if deps.mock_mode:
         # Return mock data when in development
@@ -101,21 +127,21 @@ Export with mock scenarios:
 scenarios = [
     {
         "name": "Mock Mode",
-        "dependencies": {
-            "mock_mode": True,
-            "payment_service": None,
-        }
+        "settings": PaymentDeps(
+            mock_mode=True,
+            payment_service=None,
+        ),
     },
     {
         "name": "Real API",
-        "dependencies": {
-            "mock_mode": False,
-            "payment_service": ProductionPaymentService(),
-        }
+        "settings": PaymentDeps(
+            mock_mode=False,
+            payment_service=ProductionPaymentService(),
+        ),
     },
 ]
 
-export(agent, name="Payment Agent", scenarios=scenarios)
+export(agent=agent, agent_name="Payment Agent", scenarios=scenarios)
 ```
 
 **Benefits:**
@@ -128,33 +154,43 @@ export(agent, name="Payment Agent", scenarios=scenarios)
 A/B test different agent behaviors:
 
 ```python
+from pydantic import BaseModel
+
+
+class FeatureFlagsDeps(BaseModel):
+    new_recommendation_engine: bool
+    extended_context: bool
+
+
 scenarios = [
     {
         "name": "Control (v1)",
         "description": "Original behavior",
-        "dependencies": {
-            "new_recommendation_engine": False,
-            "extended_context": False,
-        }
+        "settings": FeatureFlagsDeps(
+            new_recommendation_engine=False,
+            extended_context=False,
+        ),
     },
     {
         "name": "Test (v2)",
         "description": "New recommendation engine",
-        "dependencies": {
-            "new_recommendation_engine": True,
-            "extended_context": True,
-        }
+        "settings": FeatureFlagsDeps(
+            new_recommendation_engine=True,
+            extended_context=True,
+        ),
     },
 ]
 
+
 @agent.tool
-def get_recommendations(query: str, deps: MyDeps) -> str:
+def get_recommendations(query: str, deps: FeatureFlagsDeps) -> str:
     if deps.new_recommendation_engine:
         return get_new_recommendations(query)
     else:
         return get_old_recommendations(query)
 
-export(agent, name="Recommender Agent", scenarios=scenarios)
+
+export(agent=agent, agent_name="Recommender Agent", scenarios=scenarios)
 ```
 
 **Benefits:**
@@ -168,6 +204,14 @@ Generate scenarios dynamically based on configuration files:
 
 ```python
 import yaml
+from pydantic import BaseModel
+
+
+class ScenarioConfig(BaseModel):
+    company_name: str
+    api_key: str
+    support_email: str
+
 
 # Load from config file
 with open("agent_scenarios.yaml") as f:
@@ -177,12 +221,12 @@ scenarios = [
     {
         "name": s["name"],
         "description": s.get("description"),
-        "dependencies": s["config"],
+        "settings": ScenarioConfig(**s["config"]),
     }
     for s in config["scenarios"]
 ]
 
-export(agent, name=config["agent_name"], scenarios=scenarios)
+export(agent=agent, agent_name=config["agent_name"], scenarios=scenarios)
 ```
 
 `agent_scenarios.yaml`:
@@ -212,18 +256,22 @@ scenarios:
 Register different tools for different scenarios:
 
 ```python
-# Note: Tools must be registered at agent creation time,
-# but you can condition behavior within tools
-
+from pydantic import BaseModel
 from pydantic_ai import Agent
+
+
+class ConditionalDeps(BaseModel):
+    enable_external_api: bool
+
 
 agent = Agent(
     model="openai:gpt-4",
-    deps_type=MyDeps,
+    deps_type=ConditionalDeps,
 )
 
+
 @agent.tool
-def external_api_call(query: str, deps: MyDeps) -> str:
+def external_api_call(query: str, deps: ConditionalDeps) -> str:
     """Call external API based on scenario."""
     if not deps.enable_external_api:
         return "External API disabled in this scenario"
@@ -231,9 +279,16 @@ def external_api_call(query: str, deps: MyDeps) -> str:
     # Call the API
     return call_external_api(query)
 
+
 scenarios = [
-    {"name": "Sandbox", "dependencies": {"enable_external_api": False}},
-    {"name": "Live", "dependencies": {"enable_external_api": True}},
+    {
+        "name": "Sandbox",
+        "settings": ConditionalDeps(enable_external_api=False),
+    },
+    {
+        "name": "Live",
+        "settings": ConditionalDeps(enable_external_api=True),
+    },
 ]
 ```
 
@@ -247,9 +302,8 @@ scenarios = [
 Test agent with different LLM providers:
 
 ```python
-# Note: Agent model is fixed at creation, so you need separate agents
-
 from pydantic_ai import Agent
+from agent_playbook import export
 
 # Fast model
 fast_agent = Agent(model="openai:gpt-4o-mini")
@@ -260,9 +314,21 @@ quality_agent = Agent(model="openai:gpt-4")
 # Cost-effective model
 budget_agent = Agent(model="anthropic:claude-3-5-haiku-20241022")
 
-export(fast_agent, name="Fast Response", scenarios=[{"name": "Default"}])
-export(quality_agent, name="Quality Response", scenarios=[{"name": "Default"}])
-export(budget_agent, name="Budget Response", scenarios=[{"name": "Default"}])
+export(
+    agent=fast_agent,
+    agent_name="Fast Response",
+    scenarios=[{"name": "Default", "settings": None}],
+)
+export(
+    agent=quality_agent,
+    agent_name="Quality Response",
+    scenarios=[{"name": "Default", "settings": None}],
+)
+export(
+    agent=budget_agent,
+    agent_name="Budget Response",
+    scenarios=[{"name": "Default", "settings": None}],
+)
 ```
 
 Then in the playground, you can select different agents to compare responses.
@@ -295,13 +361,6 @@ Click "Show Thinking" to see agent's reasoning:
 - Understand why agent chose a tool
 - Spot reasoning errors
 - Verify system prompt is being used
-
-### 4. Use Mock Results
-
-For tools that fail, mock a result to continue testing:
-- Click "Mock" on a tool call
-- Enter what you expect the result should be
-- Agent continues with your mocked data
 
 ## Next Steps
 
