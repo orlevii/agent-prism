@@ -29,7 +29,7 @@ Agent Playbook automatically discovers your `pydantic-ai` agents, loads them int
 - 🔍 **Auto-Discovery** - Automatically finds and loads agents from your codebase
 - 🎮 **Interactive Playground** - Beautiful web UI for testing agents in real-time
 - 🔄 **Streaming Support** - Watch agent responses, thinking, and tool calls as they happen
-- 🧩 **Dependency Injection** - Configure and switch between different dependency contexts
+- 🧩 **Scenario Configuration** - Test agents with different configurations
 - 🛠️ **Tool Visualization** - See exactly what tools agents call with arguments and results
 
 ## 🚀 Quick Start
@@ -43,8 +43,6 @@ pip install agent-playbook
 (The CLI command is `playbook`, not `agent-playbook`)
 
 ### Basic Example
-
-Agent Playbook requires two separate files:
 
 **Step 1: Define your agent** (`support_agent.py`)
 
@@ -80,7 +78,7 @@ async def create_ticket(ctx: RunContext[SupportDeps], issue: str, priority: str)
 
 **Step 2: Export scenarios** (`support_agent__scenarios.py`)
 
-Agent Playbook auto-discovers files ending with `__scenarios.py` and registers the agents. Use the `export()` function to define different configurations:
+Agent Playbook auto-discovers modules ending with `__scenarios` and registers the agents. Use the `export()` function to define different configurations:
 
 ```python
 from agent_playbook import export
@@ -120,7 +118,6 @@ Options:
   --host TEXT      Server host (default: 0.0.0.0)
   --port INTEGER   Server port (default: 8765)
   --reload         Auto-reload on code changes
-  --dev            Development mode (Vite dev server)
 ```
 
 ## 🤝 Contributing

@@ -40,8 +40,6 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Exporting Agents: exporting-agents.md
   - Scenarios: scenarios.md
   - Playground Guide: playground-guide.md
   - CLI Reference: cli-reference.md
-  - Common Patterns: patterns.md

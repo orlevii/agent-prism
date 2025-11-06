@@ -64,7 +64,6 @@ export(
     scenarios=[
         {
             "name": "Default",
-            "settings": None,
         }
     ],
 )
@@ -80,12 +79,12 @@ agent-playbook my_agents
 
 This command will:
 - Auto-discover your agent via the `__scenarios.py` file
-- Start a web server on `http://localhost:8000`
+- Start a web server on `http://localhost:8765`
 - Open the interactive playground
 
 ### 5. Test Your Agent
 
-Open http://localhost:8000 in your browser and:
+Open http://localhost:8765 in your browser and:
 1. Select your agent from the dropdown
 2. Type a message (e.g., "What's the status of order 123?")
 3. Watch your agent respond with thinking, tool calls, and results

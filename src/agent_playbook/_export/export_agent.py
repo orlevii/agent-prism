@@ -47,6 +47,33 @@ def export(
     agent_name: str | None = None,
     init_dependencies_fn: Callable[[TSettings], TDeps] = _identity,
 ) -> None:
+    """
+    Export an agent and its scenarios to be used in other contexts.
+
+    This function registers an agent along with its associated scenarios and dependencies
+    for later use. It handles the agent's name resolution and registration in the agent loader.
+
+    Args:
+        agent (Agent[TDeps, TResp]): The agent to be exported
+        scenarios (list[Scenario[TSettings]]): List of scenarios associated with the agent
+            The settings provided in each scenario are available for modification
+        agent_name (str | None, optional): Custom name for the agent. If None, uses agent's name
+            or generates a fallback name.
+        init_dependencies_fn (Callable[[TSettings], TDeps], optional): Function to initialize
+            agent dependencies from scenario settings. Defaults to identity function.
+
+    Returns:
+        None
+
+    Example:
+        ```python
+        export(
+            agent=my_agent,
+            scenarios=[scenario1, scenario2],
+            agent_name="custom_agent",
+        )
+        ```
+    """
     name = agent_name or agent.name or _get_fallback_agent_name()
 
     exported_agent = ExportedAgent(

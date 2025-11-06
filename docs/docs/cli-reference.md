@@ -24,7 +24,7 @@ Specify the port for the web server.
 agent-playbook my_agents --port 8001
 ```
 
-**Default:** `8000`
+**Default:** `8765`
 
 ### `--host HOST`
 
@@ -34,7 +34,7 @@ Specify the host/IP address to bind to.
 agent-playbook my_agents --host 0.0.0.0
 ```
 
-**Default:** `127.0.0.1`
+**Default:** `0.0.0.0`
 
 ### `--reload`
 
@@ -88,7 +88,7 @@ This prefixes all API endpoints with `/agents/`, so the API becomes:
 ### Development with Hot Reload
 
 ```bash
-agent-playbook my_agents --reload --port 8000
+agent-playbook my_agents --reload
 ```
 
 This enables:
@@ -99,7 +99,7 @@ This enables:
 ### Production Setup
 
 ```bash
-agent-playbook my_agents --host 0.0.0.0 --workers 4 --port 8000
+agent-playbook my_agents --host 0.0.0.0 --workers 4
 ```
 
 This:
@@ -142,64 +142,10 @@ agent-playbook my_agents --port 3000
 
 **Production on Linux:**
 ```bash
-agent-playbook my_agents --host 0.0.0.0 --workers 4 --port 8000
+agent-playbook my_agents --host 0.0.0.0 --workers 4
 ```
 
 **Behind Nginx proxy (prefixed path):**
 ```bash
 agent-playbook my_agents --root-path /agents --host 127.0.0.1 --workers 4
 ```
-
-## Troubleshooting
-
-### "No agents found"
-
-**Solution:**
-1. Check that files ending with `__scenarios.py` exist
-2. Ensure `export()` is called in those files
-3. Verify the package name is correct
-
-```bash
-# Debug: Check if package is importable
-python -c "import my_agents; print(my_agents.__file__)"
-```
-
-### Port already in use
-
-**Solution:** Use a different port
-
-```bash
-agent-playbook my_agents --port 8001
-```
-
-Or find what's using the port:
-
-```bash
-# macOS/Linux
-lsof -i :8000
-
-# Windows
-netstat -ano | findstr :8000
-```
-
-### Changes not reloading
-
-**Solution:** Make sure you're using `--reload`
-
-```bash
-agent-playbook my_agents --reload
-```
-
-### Connection refused
-
-**Solution:** Check that the server is running and accessible
-
-```bash
-# Test if server is responding
-curl http://localhost:8000/api/agents
-```
-
-## Next Steps
-
-- **Getting started?** See [Getting Started](getting-started.md)
-- **Need help with agents?** Check [Exporting Agents](exporting-agents.md)

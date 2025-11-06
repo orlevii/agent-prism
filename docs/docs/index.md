@@ -28,11 +28,10 @@ pip install agent-playbook
 agent-playbook your_package
 ```
 
-Open http://localhost:8000 and start testing your agent!
+Open http://localhost:8765 and start testing your agent!
 
 ## Next Steps
 
 - **New to Agent Playbook?** Start with [Getting Started](getting-started.md)
-- **Have a pydantic-ai agent?** Learn how to [Export Your Agent](exporting-agents.md)
 - **Ready to use the UI?** Check out the [Playground Guide](playground-guide.md)
 - **Need CLI options?** See the [CLI Reference](cli-reference.md)

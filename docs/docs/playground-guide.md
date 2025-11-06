@@ -123,9 +123,3 @@ Edit the settings:
 - Check browser console for errors
 - Ensure your agent's model is properly configured
 - Check API keys in settings
-
-## Next Steps
-
-- **Want to test different configurations?** See [Scenarios](scenarios.md)
-- **Need CLI options?** Check [CLI Reference](cli-reference.md)
-- **Running into issues?** See [Common Patterns](patterns.md)
