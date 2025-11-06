@@ -93,7 +93,7 @@ export default function SettingsSidebar({ settings, onUpdateSetting }: SettingsS
             type="text"
             value={settings.baseUrl}
             onChange={(e) => onUpdateSetting('baseUrl', e.target.value)}
-            placeholder="http://localhost:8000"
+            placeholder="http://localhost:8765"
             className="font-mono text-sm"
           />
           <p className="text-xs text-muted-foreground">API server endpoint</p>

@@ -67,8 +67,15 @@ async def get_agents() -> GetAgentsResponse:
     for exported_agent in agent_loader._agents.values():
         settings_list = []
         for scenario in exported_agent.scenarios:
-            settings_obj = scenario["settings"]
-            settings_data = settings_obj.model_dump()
+            settings_obj: Any = scenario.get("settings", {})
+            if isinstance(settings_obj, dict):
+                settings_data = settings_obj
+            elif isinstance(settings_obj, BaseModel):
+                settings_data = settings_obj.model_dump()
+            else:
+                raise RuntimeError(
+                    f"Settings type is not supported: {settings_obj.__class__.__name__}"
+                )
             settings_list.append(
                 SettingsInfo(name=scenario["name"], data=settings_data)
             )
@@ -169,7 +176,7 @@ async def stream_agent_events(
 
     # Initialize dependencies using the settings and init_dependencies_fn
     if exported_agent.scenarios:
-        settings_type = type(exported_agent.scenarios[0]["settings"])
+        settings_type = type(exported_agent.scenarios[0].get("settings") or {})
         settings_obj = settings_type(**settings)
         deps = exported_agent.init_dependencies_fn(settings_obj)
     else:

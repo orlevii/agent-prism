@@ -1,4 +1,4 @@
-from agent_playbook.export import export
+from agent_playbook import export
 
 from .support_agent import SupportDeps, support_agent
 
