@@ -24,7 +24,7 @@ When developing UI components, tools like Storybook revolutionized the workflow 
 
 Agent Playbook automatically discovers your `pydantic-ai` agents, loads them into an interactive web playground, and lets you test, debug, and showcase them in real-time with full visibility into their thinking process and tool executions.
 
-https://gist.github.com/user-attachments/assets/eebacd09-e9da-43a9-825e-7e67504c86a7
+<img width="800" height="450" alt="image" src="https://github.com/user-attachments/assets/b9e886d5-10a7-4ba2-804a-ce9a0b0944cd" />
 
 ## ✨ Key Features
 

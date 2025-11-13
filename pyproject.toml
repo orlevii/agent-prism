@@ -1,12 +1,13 @@
 [tool.poetry]
 name = "agent-playbook"
-version = "0.1.1"
+version = "0.1.2"
 description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
 homepage = "https://github.com/orlevii/agent-playbook"
 repository = "https://github.com/orlevii/agent-playbook"
 readme = "README.md"
 packages = [{ include = "agent_playbook", from = "src" }]
+include = [{ path = "src/agent_playbook/static", format = ["sdist", "wheel"] }]
 
 [tool.poetry.scripts]
 playbook = "agent_playbook.cli:cli"
