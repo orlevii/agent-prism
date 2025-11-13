@@ -1,0 +1,41 @@
+name: build
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  task:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: [ "lint", "mypy" ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install pipx
+        run: |
+          pip install --user pipx
+          pipx ensurepath
+
+      - name: Install global dependencies
+        run: |
+          pipx install poetry==2.2.* --python python
+          pipx install poethepoet --python python
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run ${{ matrix.task }}
+        run: |
+          poe ${{ matrix.task }}

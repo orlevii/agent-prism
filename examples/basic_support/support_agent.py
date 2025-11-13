@@ -31,7 +31,7 @@ class SupportDeps(BaseModel):
 support_agent = Agent(
     model="openai:gpt-5-mini",
     deps_type=SupportDeps,
-    output_type=str | DeferredToolRequests
+    output_type=str | DeferredToolRequests,
 )
 
 
