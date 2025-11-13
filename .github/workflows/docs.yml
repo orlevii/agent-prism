@@ -1,0 +1,49 @@
+name: docs
+
+on: 
+  push:
+    branches:
+      - docs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install global dependencies
+        run: |
+          pip install pipx
+          pipx install poetry==2.2.* poethepoet
+
+      - name: Install docs dependencies
+        run: poetry install --only=docs
+
+      - name: build docs
+        run: poe docs:build
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agent-playbook"
-version = "0.0.1"
+version = "0.1.0"
 description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
 homepage = "https://github.com/orlevii/agent-playbook"
