@@ -29,9 +29,3 @@ agent-playbook your_package
 ```
 
 Open http://localhost:8765 and start testing your agent!
-
-## Next Steps
-
-- **New to Agent Playbook?** Start with [Getting Started](getting-started.md)
-- **Ready to use the UI?** Check out the [Playground Guide](playground-guide.md)
-- **Need CLI options?** See the [CLI Reference](cli-reference.md)
