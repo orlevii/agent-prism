@@ -3,6 +3,8 @@ name = "agent-playbook"
 version = "0.0.1"
 description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
+homepage = "https://github.com/orlevii/agent-playbook"
+repository = "https://github.com/orlevii/agent-playbook"
 packages = [{ include = "agent_playbook", from = "src" }]
 
 [tool.poetry.scripts]
