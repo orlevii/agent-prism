@@ -115,7 +115,7 @@ playbook myapp.agents --reload
 playbook <package> [options]
 
 Options:
-  --host TEXT      Server host (default: 0.0.0.0)
+  --host TEXT      Server host (default: 127.0.0.1)
   --port INTEGER   Server port (default: 8765)
   --reload         Auto-reload on code changes
 ```

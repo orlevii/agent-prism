@@ -10,7 +10,7 @@ from pydantic import BaseModel
 class StartCommandParams(BaseModel):
     package: Argument[str]
 
-    host: Option[str] = "0.0.0.0"
+    host: Option[str] = "127.0.0.1"
     port: Option[int] = 8765
     root_path: Option[str] = ""
     workers: Annotated[int, OptionSettings(aliases=["-w"])] = 1

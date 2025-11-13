@@ -6,6 +6,10 @@
 
 Agent Playbook provides an isolated, interactive testing environment for your pydantic-ai agents. With a beautiful web playground, you get real-time visibility into agent thinking, tool executions, and streaming responses—enabling rapid iteration and debugging.
 
+
+https://gist.github.com/user-attachments/assets/eebacd09-e9da-43a9-825e-7e67504c86a7
+
+
 ## Key Features
 
 - 🎭 **Interactive Playground** — Chat with your agents in a web UI without writing code

@@ -188,6 +188,7 @@ async def stream_agent_events(
                 user_prompt,
                 message_history=message_history,
                 deps=deps,
+                model=exported_agent.model,
                 deferred_tool_results=pydantic_deferred_results,
             ):
                 if isinstance(event, PartStartEvent):

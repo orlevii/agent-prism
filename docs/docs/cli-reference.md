@@ -31,10 +31,10 @@ agent-playbook my_agents --port 8001
 Specify the host/IP address to bind to.
 
 ```bash
-agent-playbook my_agents --host 0.0.0.0
+agent-playbook my_agents --host 127.0.0.1
 ```
 
-**Default:** `0.0.0.0`
+**Default:** `127.0.0.1`
 
 ### `--reload`
 
@@ -99,7 +99,7 @@ This enables:
 ### Production Setup
 
 ```bash
-agent-playbook my_agents --host 0.0.0.0 --workers 4
+agent-playbook my_agents --host 127.0.0.1 --workers 4
 ```
 
 This:
@@ -110,7 +110,7 @@ This:
 ### Behind a Reverse Proxy
 
 ```bash
-agent-playbook my_agents --root-path /my-agents --host 0.0.0.0
+agent-playbook my_agents --root-path /my-agents --host 127.0.0.1
 ```
 
 Then configure your proxy to forward requests to `/my-agents/*` to the server.
@@ -142,7 +142,7 @@ agent-playbook my_agents --port 3000
 
 **Production on Linux:**
 ```bash
-agent-playbook my_agents --host 0.0.0.0 --workers 4
+agent-playbook my_agents --host 127.0.0.1 --workers 4
 ```
 
 **Behind Nginx proxy (prefixed path):**
