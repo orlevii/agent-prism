@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agent-playbook"
-version = "0.1.0"
+version = "0.1.1"
 description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
 homepage = "https://github.com/orlevii/agent-playbook"
@@ -49,6 +49,7 @@ format = [
 test = "pytest"
 mypy = "mypy -p agent_playbook -p tests"
 "doccmd" = "doccmd --language=python --no-pad-file --command='ruff format'"
+"web:build" = "python -m scripts.build"
 
 # docs
 "docs:build".shell = "cd docs && mkdocs build"
@@ -59,9 +60,6 @@ addopts = "--cov=agent_playbook --cov tests -v"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "strict"
 env = ["TEST=true", "ENV=test"]
-
-[tool.poetry.build]
-script = "build.py"
 
 [build-system]
 requires = ["poetry-core"]
