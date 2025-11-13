@@ -5,6 +5,7 @@ description = "The Storybook for AI Agents"
 authors = ["Or Levi <orlevi128@gmail.com>"]
 homepage = "https://github.com/orlevii/agent-playbook"
 repository = "https://github.com/orlevii/agent-playbook"
+readme = "README.md"
 packages = [{ include = "agent_playbook", from = "src" }]
 
 [tool.poetry.scripts]
