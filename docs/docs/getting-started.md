@@ -88,23 +88,3 @@ Open http://localhost:8765 in your browser and:
 1. Select your agent from the dropdown
 2. Type a message (e.g., "What's the status of order 123?")
 3. Watch your agent respond with thinking, tool calls, and results
-
-## What's Next?
-
-- **Multiple configurations?** Learn about [Scenarios](scenarios.md)
-- **Complex setup?** See how to use [Dependency Injection](scenarios.md#using-dependency-injection)
-- **Explore the UI?** Read the [Playground Guide](playground-guide.md)
-- **Need more options?** Check the [CLI Reference](cli-reference.md)
-
-## Troubleshooting
-
-**"No agents found"**
-- Ensure your file ends with `__scenarios.py`
-- Make sure you're calling `export()` in that file
-- Verify the package path is correct in the command
-
-**Port already in use**
-- Use `--port 8001` (or any other port) to specify a different port
-
-**Changes not reloading**
-- Use `agent-playbook my_agents --reload` for hot reload during development

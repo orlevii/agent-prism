@@ -2,6 +2,7 @@ import inspect
 from typing import Any, Callable, cast, overload
 
 from pydantic_ai import Agent
+from pydantic_ai.models import Model
 
 from agent_playbook.agent_loader import agent_loader
 
@@ -25,6 +26,7 @@ def export(
     agent: Agent[TSettings, TResp],
     scenarios: list[Scenario[TSettings]],
     agent_name: str | None = None,
+    model: Model | None = None,
 ) -> None:
     pass
 
@@ -35,6 +37,7 @@ def export(
     agent: Agent[TDeps, TResp],
     scenarios: list[Scenario[TSettings]],
     agent_name: str | None = None,
+    model: Model | None = None,
     init_dependencies_fn: Callable[[TSettings], TDeps],
 ) -> None:
     pass
@@ -45,6 +48,7 @@ def export(
     agent: Agent[TDeps, TResp],
     scenarios: list[Scenario[TSettings]],
     agent_name: str | None = None,
+    model: Model | None = None,
     init_dependencies_fn: Callable[[TSettings], TDeps] = _identity,
 ) -> None:
     """
@@ -80,6 +84,7 @@ def export(
         agent=agent,
         scenarios=scenarios,
         agent_name=name,
+        model=model,
         init_dependencies_fn=init_dependencies_fn,
     )
 

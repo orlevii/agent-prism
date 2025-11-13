@@ -10,7 +10,7 @@ import os
 from uuid import uuid4
 
 from pydantic import BaseModel
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent, DeferredToolRequests, RunContext
 
 # So the code doesn't fail
 os.environ.setdefault("OPENAI_API_KEY", "sk-abc")
@@ -31,6 +31,7 @@ class SupportDeps(BaseModel):
 support_agent = Agent(
     model="openai:gpt-5-mini",
     deps_type=SupportDeps,
+    output_type=str | DeferredToolRequests
 )
 
 

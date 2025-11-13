@@ -24,6 +24,8 @@ When developing UI components, tools like Storybook revolutionized the workflow 
 
 Agent Playbook automatically discovers your `pydantic-ai` agents, loads them into an interactive web playground, and lets you test, debug, and showcase them in real-time with full visibility into their thinking process and tool executions.
 
+https://gist.github.com/user-attachments/assets/eebacd09-e9da-43a9-825e-7e67504c86a7
+
 ## ✨ Key Features
 
 - 🔍 **Auto-Discovery** - Automatically finds and loads agents from your codebase
@@ -115,7 +117,7 @@ playbook myapp.agents --reload
 playbook <package> [options]
 
 Options:
-  --host TEXT      Server host (default: 0.0.0.0)
+  --host TEXT      Server host (default: 127.0.0.1)
   --port INTEGER   Server port (default: 8765)
   --reload         Auto-reload on code changes
 ```

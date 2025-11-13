@@ -41,5 +41,4 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Scenarios: scenarios.md
-  - Playground Guide: playground-guide.md
   - CLI Reference: cli-reference.md

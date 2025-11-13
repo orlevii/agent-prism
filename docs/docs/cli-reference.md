@@ -31,10 +31,10 @@ agent-playbook my_agents --port 8001
 Specify the host/IP address to bind to.
 
 ```bash
-agent-playbook my_agents --host 0.0.0.0
+agent-playbook my_agents --host 127.0.0.1
 ```
 
-**Default:** `0.0.0.0`
+**Default:** `127.0.0.1`
 
 ### `--reload`
 
@@ -92,20 +92,10 @@ agent-playbook my_agents --reload
 ```
 
 This enables:
+
 - ✅ Automatic restart on file changes
 - ✅ Console output for debugging
 - ✅ Easy iteration on agents
-
-### Production Setup
-
-```bash
-agent-playbook my_agents --host 0.0.0.0 --workers 4
-```
-
-This:
-- ✅ Listens on all network interfaces
-- ✅ Uses 4 worker processes
-- ✅ Ready for reverse proxy setup
 
 ### Behind a Reverse Proxy
 
@@ -114,38 +104,3 @@ agent-playbook my_agents --root-path /my-agents --host 0.0.0.0
 ```
 
 Then configure your proxy to forward requests to `/my-agents/*` to the server.
-
-## Environment Variables
-
-Agent Playbook respects standard Python environment variables:
-
-- `PYTHONPATH` — Add directories to Python module search path
-- `PYTHONDONTWRITEBYTECODE` — Prevent `.pyc` file generation
-
-Example:
-
-```bash
-PYTHONPATH=/my/custom/path agent-playbook my_agents
-```
-
-## Example Commands
-
-**Local development:**
-```bash
-agent-playbook my_agents --reload
-```
-
-**Test on a different port:**
-```bash
-agent-playbook my_agents --port 3000
-```
-
-**Production on Linux:**
-```bash
-agent-playbook my_agents --host 0.0.0.0 --workers 4
-```
-
-**Behind Nginx proxy (prefixed path):**
-```bash
-agent-playbook my_agents --root-path /agents --host 127.0.0.1 --workers 4
-```
